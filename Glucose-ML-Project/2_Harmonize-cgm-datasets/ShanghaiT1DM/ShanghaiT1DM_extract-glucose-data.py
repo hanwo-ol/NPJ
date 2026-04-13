@@ -23,8 +23,9 @@ def clean_shanghait1dm_data(root, dst):
     """
     Cleans and standardizes ShanghaiT1DM CGM data by:
     - Renaming columns to project-standard names
-    - Converting timestamps to pandas datetime format
-    - Writing per-subject CSV files containing timestamped glucose values
+    - Converts timestamps to pandas datetime format
+    - Writes per-subject CSV files containing timestamped glucose values
+    - Writes per-subject extended CSV files preserving all dietary and insulin covariates
     
     Args:
         root (str): Path to the directory containing Shanghai T1DM Excel files
@@ -35,13 +36,19 @@ def clean_shanghait1dm_data(root, dst):
     """
 
     subj_dict = {}
+    ext_dst = dst.replace("ShanghaiT1DM-extracted-glucose-files", "ShanghaiT1DM-extended-features")
+    if "Standardized-datasets" in dst:
+        ext_dst = dst + "-extended-features"
+    os.makedirs(ext_dst, exist_ok=True)
+    
     # Iterrate through raw data files.
     for file in os.listdir(root):
         if file.endswith('.xlsx') or file.endswith('.xls'):
-            if file.split('_')[0] not in subj_dict:
-                subj_dict.update({file.split('_')[0]: [file]})
-            else:
-                subj_dict[file.split('_')[0]].append(file)
+            if not file.startswith('~$'): # skip temp excel files
+                if file.split('_')[0] not in subj_dict:
+                    subj_dict.update({file.split('_')[0]: [file]})
+                else:
+                    subj_dict[file.split('_')[0]].append(file)
     count = 0
     for subj in subj_dict.keys():
         count += 1
@@ -53,10 +60,13 @@ def clean_shanghait1dm_data(root, dst):
                 df = pd.read_excel(file_path, sheet_name=subj_dict[subj][0].split('.')[0], engine=engine)
                 # Rename columns & convert timestamp data to the standardized names used throughout the project.
                 df_selected = df[['Date', 'CGM (mg / dl)']].rename(columns={'Date': 'timestamp', 'CGM (mg / dl)': 'glucose_value_mg_dl'})
-                # Drop rows missing timestamps or glucose values
                 df_selected = df_selected.dropna(subset=["timestamp", "glucose_value_mg_dl"])
-
                 df_selected.to_csv(os.path.join(dst, subj+'.csv'), index=None)
+                
+                # Extended output
+                df_ext = df.rename(columns={'Date': 'timestamp'})
+                df_ext = df_ext.dropna(subset=["timestamp"])
+                df_ext.to_csv(os.path.join(ext_dst, subj+'_extended.csv'), index=None, encoding='utf-8-sig')
             except Exception as e:
                 print(f"{LIGHT_RED}Glucose-ML{R}: Error processing {file_path}: {e}")
         # subject with multiple files
@@ -78,10 +88,13 @@ def clean_shanghait1dm_data(root, dst):
                 # Rename columns & convert timestamp data to the standardized names used throughout the project.
 
                 df_selected = df[['Date', 'CGM (mg / dl)']].rename(columns={'Date': 'timestamp', 'CGM (mg / dl)': 'glucose_value_mg_dl'})
-                # Drop rows missing timestamps or glucose values
                 df_selected = df_selected.dropna(subset=["timestamp", "glucose_value_mg_dl"])
-
                 df_selected.to_csv(os.path.join(dst, subj+'.csv'), index=None)
+                
+                # Extended output
+                df_ext = df.rename(columns={'Date': 'timestamp'})
+                df_ext = df_ext.dropna(subset=["timestamp"])
+                df_ext.to_csv(os.path.join(ext_dst, subj+'_extended.csv'), index=None, encoding='utf-8-sig')
     print(f'{LIME_GREEN}Glucose-ML{R}: Standardized CGM records for {LIGHT_RED}{count}{R} subjects.')
     
     
@@ -105,11 +118,12 @@ def main():
     # Path to directory containing the raw data files.
     input_path = Path(sys.argv[1])
 
-    #Create output directory "Standardized-datasets" to store processed CSV file outputs.
-    output_dir = "Standardized-datasets/ShanghaiT1DM"
+    # Create output directories directly in target 3_Glucose-ML-collection struct
+    glucose_ml_dir = Path(__file__).resolve().parent.parent.parent
+    output_dir = glucose_ml_dir / "3_Glucose-ML-collection/ShanghaiT1DM/ShanghaiT1DM-extracted-glucose-files"
     os.makedirs(output_dir, exist_ok=True)
     
-    clean_shanghait1dm_data(input_path, output_dir)
+    clean_shanghait1dm_data(str(input_path), str(output_dir))
 
 if __name__ == "__main__":
     main()

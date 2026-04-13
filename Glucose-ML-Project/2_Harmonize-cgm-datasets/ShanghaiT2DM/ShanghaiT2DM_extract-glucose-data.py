@@ -11,8 +11,9 @@ def clean_shanghait2dm_data(root, dst):
     """
     Cleans and standardizes ShanghaiT2DM CGM data by:
     - Renaming columns to project-standard names
-    - Converting timestamps to pandas datetime format
-    - Writing per-subject CSV files containing timestamped glucose values
+    - Converts timestamps to pandas datetime format
+    - Writes per-subject CSV files containing timestamped glucose values
+    - Writes per-subject extended CSV files preserving all dietary and insulin covariates
     
     Args:
         root (str): Path to the directory containing Shanghai T2DM Excel files
@@ -23,7 +24,14 @@ def clean_shanghait2dm_data(root, dst):
     """
 
     subj_dict = {}
+    ext_dst = dst.replace("ShanghaiT2DM-extracted-glucose-files", "ShanghaiT2DM-extended-features")
+    if "Standardized-datasets" in dst:
+        ext_dst = dst + "-extended-features"
+    os.makedirs(ext_dst, exist_ok=True)
+    
     for file in os.listdir(root):
+        if file.startswith('~$') or not (file.endswith('.xls') or file.endswith('.xlsx')):
+            continue
         if file.split('_')[0] not in subj_dict:
             subj_dict.update({file.split('_')[0]: [file]})
         else:
@@ -45,6 +53,12 @@ def clean_shanghait2dm_data(root, dst):
         # Drop rows missing timestamps or glucose values
         df_selected = df_selected.dropna(subset=["timestamp", "glucose_value_mg_dl"])
         df_selected.to_csv(os.path.join(dst, subj+'.csv'), index=None)
+        
+        # Extended output
+        df_ext = df.rename(columns={'Date': 'timestamp'})
+        df_ext = df_ext.dropna(subset=["timestamp"])
+        df_ext.to_csv(os.path.join(ext_dst, subj+'_extended.csv'), index=None, encoding='utf-8-sig')
+        
         count += 1
             # break
     print(f'{LIME_GREEN}Glucose-ML{R}: Standardized CGM records for {LIGHT_RED}{count}{R} subjects.')
@@ -71,11 +85,12 @@ def main():
     input_path = sys.argv[1]
     source_data_path = Path(input_path)
 
-    #Create output directory "Standardized-datasets" to store processed CSV file outputs.
-    output_dir = "Standardized-datasets/ShanghaiT2DM"
+    # Create output directories directly in target 3_Glucose-ML-collection struct
+    glucose_ml_dir = Path(__file__).resolve().parent.parent.parent
+    output_dir = glucose_ml_dir / "3_Glucose-ML-collection/ShanghaiT2DM/ShanghaiT2DM-extracted-glucose-files"
     os.makedirs(output_dir, exist_ok=True)
     
-    clean_shanghait2dm_data(source_data_path, output_dir)
+    clean_shanghait2dm_data(str(source_data_path), str(output_dir))
 
 if __name__ == "__main__":
     main()

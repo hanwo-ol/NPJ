@@ -7,7 +7,7 @@ LIME_GREEN = "\033[92m"
 LIGHT_RED = "\033[91m"
 R = "\033[0m"
 
-def clean_uchtt1dm_data(df, subject_id, output_dir):
+def clean_uchtt1dm_data(df, subject, subject_id, output_dir):
     '''
     Cleans and standardizes UCHTT1DM CGM data by:
     - Renaming columns to project-standard names
@@ -29,6 +29,25 @@ def clean_uchtt1dm_data(df, subject_id, output_dir):
     # Create an output csv for each subject using the subj_df variable.
     outfile = os.path.join(output_dir, f"{subject_id}.csv")
     subj_df.to_csv(outfile, index=False)
+    
+    # Extended Output Configuration
+    raw_dir = Path(subject.parent)
+    ext_dir = str(output_dir).replace("UCHTT1DM-extracted-glucose-files", "UCHTT1DM-extended-features")
+    if "Standardized-datasets" in str(output_dir):
+        ext_dir = str(output_dir) + "-extended-features"
+    os.makedirs(ext_dir, exist_ok=True)
+    
+    # Check for external files in the same directory
+    for file in raw_dir.glob("*.xlsx"):
+        if file.name != "Glucose.xlsx" and not file.name.startswith("~$"):
+            try:
+                xf = pd.read_excel(file)
+                # Convert Spaces to no-spaces for standard naming
+                clean_name = file.stem.replace(" ", "_").replace(".", "")
+                xf.to_csv(os.path.join(ext_dir, f"{subject_id}_{clean_name}.csv"), index=False)
+            except Exception as e:
+                pass
+            
 
 
 def main():
@@ -51,8 +70,9 @@ def main():
     # Path to directory containing the raw data files.
     input_path = Path(sys.argv[1])
 
-    #Create output directory "Standardized-datasets" to store CSV file outputs.
-    output_dir = "Standardized-datasets/UCHTT1DM"
+    # Create output directories directly in target 3_Glucose-ML-collection struct
+    glucose_ml_dir = Path(__file__).resolve().parent.parent.parent
+    output_dir = glucose_ml_dir / "3_Glucose-ML-collection/UCHTT1DM/UCHTT1DM-extracted-glucose-files"
     os.makedirs(output_dir, exist_ok=True)
 
     # Loop through raw directory contents and pull the subject ID from the raw file name.
@@ -60,7 +80,7 @@ def main():
     for subject in input_path.rglob("**/Glucose.xlsx"):
         df=pd.read_excel(subject)
         subject_id = subject.parent.name #pull the subject ID from the raw file name.
-        clean_uchtt1dm_data(df, subject_id, output_dir)
+        clean_uchtt1dm_data(df, subject, subject_id, output_dir)
         count += 1
     print(f'{LIME_GREEN}Glucose-ML{R}: Standardized CGM records for {LIGHT_RED}{count}{R} subjects.')
 

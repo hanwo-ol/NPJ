@@ -11,8 +11,9 @@ def clean_brist1d_data(df, subject_id, output_dir):
     Cleans and standardizes Bris-T1D CGM data by:
     - Renaming columns to project-standard names
     - Converting timestamps to pandas datetime format with additional quality checks.
-    - Writing per-subject CSV files containing timestamped glucose values
+    - Writes per-subject CSV files containing timestamped glucose values
     - Convert glucose records from raw mmol/L units to the project-standard mg/dL units.
+    - Captures extended columns (meals, bolus, heart rate, etc.) to an _extended CSV.
     '''
     
     # Rename columns & convert timestamp data to the standardized names used throughout the project.
@@ -20,8 +21,19 @@ def clean_brist1d_data(df, subject_id, output_dir):
 
     # Standardize time stamp data.
     df['timestamp'] = pd.to_datetime(df['timestamp'])
+    
+    # Extended Output (preserve everything except we ensure glucose is converted if bg exists)
+    ext_dir = str(output_dir).replace("Bris-T1D_Open-extracted-glucose-files", "Bris-T1D_Open-extended-features")
+    if "Standardized-datasets" in str(output_dir):
+        ext_dir = str(output_dir) + "-extended-features"
+    os.makedirs(ext_dir, exist_ok=True)
+    
     # Convert glucose records from mmol/L to mg/dL
     df["glucose_value_mg_dl"] = (df["glucose_value_mg_dl"] * 18).round(1)
+    
+    # Save extended DataFrame
+    df_ext = df.dropna(subset=['timestamp'])
+    df_ext.to_csv(os.path.join(ext_dir, f"{subject_id}_extended.csv"), index=False)
 
     # Drop rows missing timestamps or glucose values
     df = df.dropna(subset=["timestamp", "glucose_value_mg_dl"])
@@ -56,8 +68,9 @@ def main():
     # Path to directory containing the raw data files.
     input_path = Path(sys.argv[1])
 
-    #Create output directory "Standardized-datasets" to store CSV file outputs.
-    output_dir = "Standardized-datasets/Bris-T1D_Open"
+    # Create output directories directly in target 3_Glucose-ML-collection struct
+    glucose_ml_dir = Path(__file__).resolve().parent.parent.parent
+    output_dir = glucose_ml_dir / "3_Glucose-ML-collection/Bris-T1D_Open/Bris-T1D_Open-extracted-glucose-files"
     os.makedirs(output_dir, exist_ok=True)
 
     # Loop through raw directory contents and pull the subject ID from the raw file name.

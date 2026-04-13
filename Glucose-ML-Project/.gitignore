@@ -1,26 +1,54 @@
-.vscode
-**/.DS_Store
-# dependencies
-node_modules/
+# ==========================================
+# 1. 대용량 데이터 파일 전역 차단 (Data Files)
+# ==========================================
+*.csv
+*.xlsx
+*.xls
+*.zip
+*.tar
+*.gz
+*.json
+*.xml
+*.txt
+*.h5
+*.hdf5
+*.pkl
+*.parquet
 
-# Vite cache 
-.vite/
+# (예외) 코드 구동에 필수적인 텍스트 설정파일들은 업로드 허용
+!requirements.txt
+!README.md
+!README.txt
+!LICENSE.txt
+!*.py
+!*.sh
+!*.md
 
-# build output
-dist/
-dist-ssr/
+# ==========================================
+# 2. 특정 데이터 전용 폴더 차단 (선택 사항)
+# 단, 폴더 내부의 코드는 살리고 싶다면 폴더 전체를 무시하기보단 위 1번 규칙으로 충분합니다.
+# ==========================================
+# 1_Auto-scripts/Original-Glucose-ML-datasets/
+# 3_Glucose-ML-collection/
 
-# logs
-*.log
-logs/
-
-# env
+# ==========================================
+# 3. 개발 환경 및 캐시 타깃 (Environment & Cache)
+# ==========================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
 .env
-.env.*
-*.local
+.venv/
+venv/
+ENV/
+env/
+.ipynb_checkpoints/
 
-# OS/editor
-.DS_Store
+# IDE 설정
 .vscode/
 .idea/
 
+# OS 자동 생성 파일
+.DS_Store
+Thumbs.db

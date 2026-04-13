@@ -312,13 +312,13 @@ def main():
 
     if file_size_bytes_total > 1e9:
         file_size_converted = round(file_size_bytes_total / 1e9, 2)  # gigs
-        response = input(f"{LIME_GREEN}Glucose-ML{R}: You are about to download approximately {BOLD}{LIGHT_RED}{file_size_converted} GB{R} of data. Would you like to proceed? {BOLD}Enter (y/n){R}:")
+        response = "y" # input(f"{LIME_GREEN}Glucose-ML{R}: You are about to download approximately {BOLD}{LIGHT_RED}{file_size_converted} GB{R} of data. Would you like to proceed? {BOLD}Enter (y/n){R}:")
     elif file_size_bytes_total > 1e6:
         file_size_converted = round(file_size_bytes_total / 1e6, 2)  # mb
-        response = input(f"{LIME_GREEN}Glucose-ML{R}: You are about to download approximately {BOLD}{LIGHT_RED}{file_size_converted} MB{R} of data. Would you like to proceed? {BOLD}Enter (y/n){R}: ")
+        response = "y" # input(f"{LIME_GREEN}Glucose-ML{R}: You are about to download approximately {BOLD}{LIGHT_RED}{file_size_converted} MB{R} of data. Would you like to proceed? {BOLD}Enter (y/n){R}: ")
     else:
         file_size_converted = round(file_size_bytes_total / 1e3, 2)  # kb
-        response = input(f"{LIME_GREEN}Glucose-ML{R}: You are about to download approximately {BOLD}{LIGHT_RED}{file_size_converted} KB{R} of data. Would you like to proceed? {BOLD}Enter (y/n){R}: ")
+        response = "y" # input(f"{LIME_GREEN}Glucose-ML{R}: You are about to download approximately {BOLD}{LIGHT_RED}{file_size_converted} KB{R} of data. Would you like to proceed? {BOLD}Enter (y/n){R}: ")
 
     response = response.strip().lower()
     if response not in ("y", "n"):

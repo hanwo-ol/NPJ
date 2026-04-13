@@ -8,7 +8,7 @@ LIGHT_RED = "\033[91m"
 R = "\033[0m"
 
 
-def clean_big_idea_lab_data(df, subject_id, output_dir):
+def clean_big_idea_lab_data(df, subject_id, output_dir, raw_dir):
     '''
     Cleans and standardizes BIGIDEAs CGM data by:
     - Renaming columns to project-standard names
@@ -36,6 +36,22 @@ def clean_big_idea_lab_data(df, subject_id, output_dir):
     # Create an output csv for each subject using the subj_df variable.
     outfile = os.path.join(output_dir, f"{subject_id}.csv")
     subj_df.to_csv(outfile, index=False)
+    
+    # Check for Food_Log and HR files in the same raw directory for extended features
+    ext_dir = str(output_dir).replace("BIGIDEAs-extracted-glucose-files", "BIGIDEAs-extended-features")
+    if "Standardized-datasets" in str(output_dir):
+        ext_dir = str(output_dir) + "-extended-features"
+    os.makedirs(ext_dir, exist_ok=True)
+    
+    food_file = Path(raw_dir) / f"Food_Log_{subject_id}.csv"
+    if food_file.exists():
+        fdf = pd.read_csv(food_file)
+        fdf.to_csv(os.path.join(ext_dir, f"{subject_id}_Food.csv"), index=False)
+        
+    hr_file = Path(raw_dir) / f"HR_{subject_id}.csv"
+    if hr_file.exists():
+        hdf = pd.read_csv(hr_file)
+        hdf.to_csv(os.path.join(ext_dir, f"{subject_id}_HR.csv"), index=False)
 
 
 def main():
@@ -59,8 +75,9 @@ def main():
     input_path = sys.argv[1]
     source_data_path = Path(input_path)
 
-    #Create output directory "Standardized-datasets" to store processed CSV file outputs.
-    output_dir = "Standardized-datasets/BIGIDEAs"
+    # Create output directories directly in target 3_Glucose-ML-collection struct
+    glucose_ml_dir = Path(__file__).resolve().parent.parent.parent
+    output_dir = glucose_ml_dir / "3_Glucose-ML-collection/BIGIDEAs/BIGIDEAs-extracted-glucose-files"
     os.makedirs(output_dir, exist_ok=True)
 
     # Find all the files that are named "Dexcom_*.csv", as this is where the glucose readings are stored.
@@ -70,7 +87,7 @@ def main():
     for subject in sourcedata_files:
         df=pd.read_csv(subject)
         subject_id = subject.parent.name
-        clean_big_idea_lab_data(df, subject_id, output_dir)
+        clean_big_idea_lab_data(df, subject_id, output_dir, subject.parent)
         count += 1
     print(f'{LIME_GREEN}Glucose-ML{R}: Standardized CGM records for {LIGHT_RED}{count}{R} subjects.')
 

@@ -179,9 +179,17 @@ def main():
 
     manifest = pd.read_csv("Processed-Data/preprocessing_manifest.csv", dtype={"person_id": str})
     manifest = manifest[manifest["passed"] == "yes"] # Only pull participants who passed.
+    
+    features_path = Path("feature_calcs.csv")
+    if features_path.exists():
+        existing_features_df = pd.read_csv(features_path, dtype={"person_id": str})
+        existing_keys = set(zip(existing_features_df["dataset"], existing_features_df["person_id"].astype(str)))
+        manifest = manifest[~manifest.apply(lambda r: (r["dataset"], str(r["person_id"])) in existing_keys, axis=1)]
+        final_df = existing_features_df.to_dict("records")
+    else:
+        final_df = []
+        
     project_ids = manifest["dataset"].unique() # Pull dataset ids.
-
-    final_df = []
     for project in project_ids:
         project_df = manifest[manifest["dataset"]==project]
         for i, entry in project_df.iterrows():

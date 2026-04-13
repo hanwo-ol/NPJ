@@ -77,7 +77,7 @@ def main():
     if round(summ, 8) != 1.0:
         raise ValueError("Error: split proportions must equal 1!")
         
-    open_projects = ["AZT1D", "BIGIDEAs", "Bris-T1D_Open", "CGMacros_Dexcom", "Colas_2019", "D1NAMO", "Hall_2018", "HUPA-UCM", 'PhysioCGM', "ShanghaiT1DM", "ShanghaiT2DM", "T1D-UOM", "UCHTT1DM"]
+    open_projects = ["AZT1D", "BIGIDEAs", "Bris-T1D_Open", "CGMacros_Dexcom", "Colas_2019", "D1NAMO", "Hall_2018", "HUPA-UCM", 'PhysioCGM', "ShanghaiT1DM", "ShanghaiT2DM", "T1D-UOM", "UCHTT1DM", "CGMND", "AIDET1D", "GLAM", "PEDAP", "IOBP2"]
     
     final_df = []
     #Iterate through open project metadata

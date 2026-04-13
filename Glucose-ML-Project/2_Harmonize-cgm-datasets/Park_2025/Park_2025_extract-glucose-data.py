@@ -12,7 +12,8 @@ def clean_park_2025_data(df, output_dir):
     Cleans and standardizes Park_2025 CGM data by:
     - Renaming columns to project-standard names
     - Converting timestamps to pandas datetime format
-    - Writing per-subject CSV files containing timestamped glucose values
+    - Writes per-subject CSV files containing timestamped glucose values
+    - Writes extended CSV files preserving macro-variability
     '''
 
     # Rename columns & convert timestamp data to the standardized names used throughout the project.
@@ -21,13 +22,23 @@ def clean_park_2025_data(df, output_dir):
     # Drop rows missing timestamps or glucose values
     df = df.dropna(subset=["timestamp", "glucose_value_mg_dl"])
 
+    # Extended Output Configuration
+    ext_dir = str(output_dir).replace("Park_2025-extracted-glucose-files", "Park_2025-extended-features")
+    if "Standardized-datasets" in str(output_dir):
+        ext_dir = str(output_dir) + "-extended-features"
+    os.makedirs(ext_dir, exist_ok=True)
+
     # Loop to generate csv output files for each subject.
     count = 0
     for subj in df["subject"].unique():
         subj_df = df[df["subject"] == subj][["timestamp", "glucose_value_mg_dl"]]
         filename = os.path.join(output_dir, f"{subj}.csv")
         subj_df.to_csv(filename, index=False)
-        #print(f"Saved file for subject {subj}: {filename}")
+        
+        # Extended Context
+        df_ext = df[df["subject"] == subj]
+        df_ext.to_csv(os.path.join(ext_dir, f"{subj}_extended.csv"), index=False)
+        
         count += 1
     print(f'{LIME_GREEN}Glucose-ML{R}: Standardized CGM records for {LIGHT_RED}{count}{R} subjects.')
 
@@ -56,8 +67,9 @@ def main():
     csv_files = list(input_path.glob("*.csv"))
     raw_data_file = pd.read_csv(csv_files[0])
 
-    #Create output directory to store CSV file outputs.
-    output_dir = "Standardized-datasets/Park_2025"
+    # Create output directories directly in target 3_Glucose-ML-collection struct
+    glucose_ml_dir = Path(__file__).resolve().parent.parent.parent
+    output_dir = glucose_ml_dir / "3_Glucose-ML-collection/Park_2025/Park_2025-extracted-glucose-files"
     os.makedirs(output_dir, exist_ok=True)
 
 

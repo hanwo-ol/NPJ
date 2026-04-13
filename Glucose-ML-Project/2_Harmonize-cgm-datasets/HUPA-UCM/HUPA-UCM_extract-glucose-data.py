@@ -12,7 +12,8 @@ def clean_hupaucm_data(df, subject_id, output_dir):
     Cleans and standardizes HUPA-UCM CGM data by:
     - Renaming columns to project-standard names
     - Converting timestamps to pandas datetime format
-    - Writing per-subject CSV files containing timestamped glucose values
+    - Writes per-subject CSV files containing timestamped glucose values
+    - Writes extended CSV files preserving macro-variability
     '''
 
     # Rename columns & convert timestamp data to the standardized names used throughout the project.
@@ -27,9 +28,19 @@ def clean_hupaucm_data(df, subject_id, output_dir):
     # Collect timestamp & glucose readings into a new dataframe. 
     subj_df = df[["timestamp", "glucose_value_mg_dl"]]
     
+    # Extended Output Configuration
+    ext_dir = str(output_dir).replace("HUPA-UCM-extracted-glucose-files", "HUPA-UCM-extended-features")
+    if "Standardized-datasets" in str(output_dir):
+        ext_dir = str(output_dir) + "-extended-features"
+    os.makedirs(ext_dir, exist_ok=True)
+    
     # Create an output csv for each subject using the subj_df variable.
     outfile = os.path.join(output_dir, f"{subject_id}.csv")
     subj_df.to_csv(outfile, index=False)
+    
+    # Save the extended context row
+    df_ext = df.copy()
+    df_ext.to_csv(os.path.join(ext_dir, f"{subject_id}_extended.csv"), index=False)
 
 
 
@@ -53,8 +64,9 @@ def main():
     # Path to directory containing the raw data files.
     input_path = Path(sys.argv[1])
 
-    #Create output directory "Standardized-datasets" to store standardized CSV file outputs.
-    output_dir = "Standardized-datasets/HUPA-UCM"
+    # Create output directories directly in target 3_Glucose-ML-collection struct
+    glucose_ml_dir = Path(__file__).resolve().parent.parent.parent
+    output_dir = glucose_ml_dir / "3_Glucose-ML-collection/HUPA-UCM/HUPA-UCM-extracted-glucose-files"
     os.makedirs(output_dir, exist_ok=True)
 
     # Loop through raw directory contents and pull the subject ID from the raw file name.

@@ -13,7 +13,8 @@ def clean_cgmacros_data(df, subject_id, output_dir):
     Cleans and standardizes CGMacros_Libre CGM data by:
     - Renaming columns to project-standard names
     - Converting timestamps to pandas datetime format
-    - Writing per-subject CSV files containing timestamped glucose values
+    - Writes per-subject CSV files containing timestamped glucose values
+    - Writes per-subject extended CSV files preserving macro-nutrient data
     '''
     df.rename(columns={"Timestamp": "timestamp", "Libre GL": "glucose_value_mg_dl"}, inplace=True)
 
@@ -26,9 +27,19 @@ def clean_cgmacros_data(df, subject_id, output_dir):
     # Collect timestamp & glucose readings into a new dataframe. 
     subj_df = df[["timestamp", "glucose_value_mg_dl"]]
     
+    # Extended Output Configuration
+    ext_dir = str(output_dir).replace("CGMacros_Libre-extracted-glucose-files", "CGMacros_Libre-extended-features")
+    if "Standardized-datasets" in str(output_dir):
+        ext_dir = str(output_dir) + "-extended-features"
+    os.makedirs(ext_dir, exist_ok=True)
+    
     # Create an output csv for each subject using the subj_df variable.
     outfile = os.path.join(output_dir, f"{subject_id}.csv")
     subj_df.to_csv(outfile, index=False)
+    
+    # Save the un-dropped dataframe to extended directory
+    df_ext = df.copy()
+    df_ext.to_csv(os.path.join(ext_dir, f"{subject_id}_extended.csv"), index=False)
     
 
 def main():
@@ -52,14 +63,18 @@ def main():
     input_path = sys.argv[1]
     source_data_path = Path(input_path)
 
-    #Create output directory "Standardized-datasets" to store processed CSV file outputs.
-    output_dir = "Standardized-datasets/CGMacros_Libre"
+    # Create output directories directly in target 3_Glucose-ML-collection struct
+    glucose_ml_dir = Path(__file__).resolve().parent.parent.parent
+    output_dir = glucose_ml_dir / "3_Glucose-ML-collection/CGMacros_Libre/CGMacros_Libre-extracted-glucose-files"
     os.makedirs(output_dir, exist_ok=True)
     
-    for zip_path in source_data_path.rglob("CGMacros_dateshifted*.zip"):
-        extract_dir = zip_path.parent 
-        print(f"Unzipping: {zip_path}")
-        shutil.unpack_archive(zip_path, extract_dir)
+    # for zip_path in source_data_path.rglob("CGMacros_dateshifted*.zip"):
+    #     extract_dir = zip_path.parent
+    #     print(f"Unzipping: {zip_path}")
+    #     try:
+    #         shutil.unpack_archive(zip_path, extract_dir)
+    #     except Exception as e:
+    #         print(f"Skipping zip error: {e}")
 
     # Find all the files that are named "Dexcom_*.csv", as this is where the glucose readings are stored.
     sourcedata_files = source_data_path.rglob("*/CGMacros-*.csv")
