@@ -1,0 +1,902 @@
+Glucose-ML: A collection of longitudinal diabetes
+datasets for development of robust AI solutions
+Temiloluwa Prioleau∗
+Department of Computer Science
+Emory University
+Atlanta, GA 30322
+tpriole@emory.eduBaiying Lu†
+Department of Computer Science
+Dartmouth College
+Hanover, NH 03755
+baiying.lu.gr@dartmouth.edu
+Yanjun Cui†
+Department of Computer Science
+Dartmouth College
+yanjun.cui.gr@dartmouth.edu
+Abstract
+Artificial intelligence (AI) algorithms are a critical part of state-of-the-art digital
+health technology for diabetes management. Yet, access to large high-quality
+datasets is creating barriers that impede development of robust AI solutions. To
+accelerate development of transparent, reproducible, and robust AI solutions, we
+present Glucose-ML, a collection of 10 publicly available diabetes datasets, re-
+leased within the last 7 years (i.e., 2018 - 2025). The Glucose-ML collection
+comprises over 300,000 days of continuous glucose monitor (CGM) data with a
+total of 38 million glucose samples collected from 2500+ people across 4 coun-
+tries. Participants include persons living with type 1 diabetes, type 2 diabetes,
+prediabetes, and no diabetes. To support researchers and innovators with using
+this rich collection of diabetes datasets, we present a comparative analysis to
+guide algorithm developers with data selection. Additionally, we conduct a case
+study for the task of blood glucose prediction - one of the most common AI tasks
+within the field. Through this case study, we provide a benchmark for short-
+term blood glucose prediction across all 10 publicly available diabetes datasets
+within the Glucose-ML collection. We show that the same algorithm can have
+significantly different prediction results when developed/evaluated with different
+datasets. Findings from this study are then used to inform recommendations for
+developing robust AI solutions within the diabetes or broader health domain. We
+provide direct links to each longitudinal diabetes dataset in the Glucose-ML col-
+lection and openly provide our code: https://anonymous.4open.science/r/
+GlucoseML_Diabetes_Datasets_NeurIPS2025-F5FC/ .
+1 Introduction
+An artificial intelligence (AI) algorithm is only as good as the data used for development and
+evaluation. As a result, access to high-quality datasets is a precursor for building robust AI algorithms.
+This fundamental principle motivates the growing effort to increase access to high-quality datasets
+and in so doing increase the transparency, reproducibility, generalizability, fairness, and robustness of
+∗Use footnote for providing further information about author (webpage, alternative address)— notfor
+acknowledging funding agencies.
+†Equal contribution.
+Preprint. Under review.arXiv:2507.14077v1  [cs.AI]  18 Jul 2025AI algorithms, especially in human-centered domains like healthcare [ 91,85,79,18,71]. Yet, access
+to large high-quality datasets is a challenge in many health domains where a patients’ privacy and
+security is critical. This challenge motivates the target goal of making large volumes of health-relevant
+data accessible for research while minimizing potential risks and threats [55, 111, 83].
+Diabetes is an exemplar health domain in which AI algorithms are a critical part of state-of-the-art
+technology (e.g. for screening, decision-support, and management [ 41,22,30,37,102,81]). The
+prevalence of digital health technology, such as wearable continuous glucose monitors (CGMs),
+insulin pumps, and activity trackers, is creating large volumes of longitudinal diabetes-relevant data
+that is critical to develop and evaluate transformational AI-driven solutions. However, progress within
+the field is hampered by the highly regulated nature of the healthcare industry, low interoperability
+across technology, and a fragmented research community. Consequently, data-centric researchers and
+innovators have limited or no access to large high-quality datasets for developing robust AI solutions.
+To bridge this gap, we present Glucose-ML - a collection of longitudinal diabetes-relevant datasets
+to accelerate development and evaluation of transparent, reproducible, and robust AI solutions that
+can revolutionize the field. This study focuses on recent diabetes datasets that are publicly available
+through open or controlled access, and released within the last 7 years (2018 - 2025). All datasets in
+the Glucose-ML collection include real-world glucose data collected using clinically-validated CGMs
+across populations of people living with type 1 diabetes (T1D), type 2 diabetes (T2D), pre-diabetes
+(PreD), and people without diabetes. The key contributions of this work are:
+•We curate and present Glucose-ML - a collection of 10 publicly-available, diabetes-relevant
+datasets comprising longitudinal glucose data from over 2500 people across 4 countries,
+to support robust development and evaluation of AI-driven algorithms, models, and tools.
+Glucose-ML includes over 300,000 days of CGM data and a total of 38 million blood
+glucose samples.
+•We present a comparative analysis of individual datasets within the Glucose-ML collection
+to highlight strengths and weaknesses of each dataset, and to guide algorithm developers
+with the dataset selection process when seeking to develop AI solutions.
+•We present a case study for the common machine learning (ML) task of blood glucose
+prediction. Through this analysis, we characterize and compare the performance of two
+naïve prediction algorithms across 10 publicly available diabetes datasets. Additionally,
+we show that the same model can have significant performance differences for predicting
+glucose when developed/evaluated on different datasets.
+Findings from this study serve as a basis for recommendations to practitioners developing AI solutions
+for diabetes and within the broader health domain, especially as it relates to data selection, model
+design, and model evaluation.
+2 Background & Related Work
+Wearable CGMs are minimally-invasive sensors for continuous monitoring of glucose trends [ 10].
+Based on today’s technology, CGMs provide real-time glucose readings based on sensor measure-
+ments from the interstitial fluid [ 53]. Most CGMs record one glucose sample every 5 - 15 minutes
+depending on the manufacturer, and have a lifespan of 10 - 14 days [ 53]. CGMs are considered to
+be the standard of care for people living with T1D, and increasing evidence shows the benefit and
+effectiveness of CGM use in populations of people living with T2D [ 7,65,103]. Additionally, in
+recent years, CGM use is becoming more popular in populations of people with prediabetes, people
+without diabetes, and in sports [ 14,47,51,54]. Other diabetes-relevant wearable devices that monitor
+and record longitudinal data include insulin pumps used for administering insulin (the hormone
+needed to metabolize glucose), and activity trackers used for monitoring relevant behavioral and
+physiological factors, such as physical activity, sedentary behavior, heart rate, body temperature, and
+sleep metrics [ 36,97]. User-generated data from these digital health technologies is foundational
+for understanding diabetes management in outpatient settings and developing novel AI solutions to
+support care [104, 82, 24, 41, 51, 66, 9, 94].
+While there are existing efforts to increase access to and availability of high quality data in the
+diabetes domain, the fragmented nature of this interdisciplinary field has created silos between
+various stakeholders, including data creators and algorithm developers. For example, the Jaeb Center
+2for Health Research (JCHR) - a nonprofit research center that conducts world class clinical trials
+with a core focus on T1D - provides public access to rich datasets from their studies [ 33]. However,
+the majority of these datasets are not leveraged within the AI and ML community for algorithmic
+innovation as evident from several literature reviews [ 31,113,116]. The most widely used publicly
+accessible datasets used for diabetes-relevant AI and ML tasks include: the Pima Indian Diabetes
+Dataset [116, 17, 78], UV A/Padova simulated dataset for T1D [67, 108], and OhioT1DM [68].
+The Pima Indian Diabetes Dataset (PIDD) was originally collected by the National Institutes of
+Diabetes and Digestive and Kidney Diseases (NIDDK) and hosted on the UCI Machine Learning
+Database. This relatively small and static PIDD dataset that includes 8 distinct attributes from 768
+Pima-Indian women (e.g. age, plasma glucose from a 2-hour oral glucose test, and diastolic blood
+pressure) has been used for ML research since year 2007 (18 years ago) and is still being used in
+year 2025 [ 86,92,101]. Conversely, the UV A/Pavoda Type 1 Diabetes simulator has been released
+in three versions (S2008 [ 56], S2013 [ 67], and S2017 [ 108]) each of which includes virtual T1D
+subjects (adults, adolescents, and children). The UV A/Pavoda simulated T1D datasets have been used
+extensively for AI and ML research toward automated insulin delivery systems for closed-loop blood
+glucose control (also known as an artificial pancreas) [ 35,61]. While simulated datasets are critical
+for developing control algorithms, best practice guidelines show the need for AI/ML algorithms to
+also be evaluated on real-world data because algorithms evaluated on simulated data can perform
+poorly in real-world settings [48].
+Amongst the publicly-available, real-world, and diabetes-relevant datasets released in the last 10
+years, the OhioT1DM dataset is the most widely in the AI and ML community [ 68,31,48]. The
+OhioT1DM dataset was originally published in 2018 and then updated in 2020. In total, this
+dataset comprises 8-weeks of time-matched CGM and insulin pump data from 12 people with
+T1D, as well as physiological data from a fitness band/activity tracker. The OhioT1DM dataset has
+been used extensively for developing and evaluating AI algorithms for blood glucose prediction
+[122,123,70,117,40]. While the OhioT1DM dataset has served as a good benchmark for developing
+and evaluating AI algorithms, it is limited by the small sample size and limited heterogeneity (e.g., all
+participants had T1D and used an insulin pump for diabetes management). Given this, it is expected
+that AI algorithms developed on such a small dataset could performed differently on a larger and
+more heterogeneous cohort with greater glycemic variability. To bridge the data challenge that stifles
+development and evaluation of robust AI solutions for diabetes and other time series modeling tasks
+[110], we present a collection of publicly-available longitudinal datasets from over 2500 people
+across multiple countries, including persons with T1D, T2D, pre-diabetes, and no diabetes.
+3 GlucoseML Overview
+Our collection of diabetes datasets - GlucoseML - includes 10 publicly available datasets with
+longitudinal data from wearable devices, including CGMs, from populations with diabetes (i.e.,
+T1D and T2D) and populations without diabetes (i.e., prediabetes or no diabetes). This collection
+prioritizes recent datasets, released between year 2018 and 2025, from observational studies and/or
+retrospective data collections that are not influenced by a clinical intervention. The majority of
+datasets included in this collection are in alignment with the well-known FAIR data principles, such
+that each dataset is findable, accessible, interoperable, and reusable [112]. Additionally, all datasets
+include associated documentation that describe the dataset (e.g. through a publication or publicly
+accessible protocol).
+Table 1 provides an overview of the Glucose-ML collection which includes longitudinal glucose
+data from OhioT1DM [ 68,69], T1DEXI [ 94], BIG IDEAs [ 13,20], DiaTrend [ 89,88], Shang-
+haiT1DM [ 119,120], ShanghaiT2DM [ 119,120], T1DiabetesGranada [ 95,96], AI-READI [ 21,6],
+UCHTT1DM [ 57,58], and CGMacros [ 43]. From Table 1, we can observe the collection includes
+diabetes datasets collected in the U.S. (60%), China (20%), Spain (10%), and Chile (10%). There
+are a total of 2559 participants across the collection of datasets, between 12 - 1067 participants in
+each dataset, and a duration of 2 - 1907 days of glucose data per participant. Across the collection
+of datasets, there is a total of 313,043 days with at least 1 glucose reading from a wearable CGM
+and a total of 38,008,810 (i.e., over 38 million) glucose readings. More details about the population
+breakdown, age, hemoglobin A1C, and summary statistics on glycemic control for each individual
+dataset is presented in Appendix Table 3 and 4.
+3Table 1: Overview of the Glucose-ML collection comprising 10 public diabetes datasets available for
+development of robust AI solutions.
+Publicly available
+Diabetes DatasetsAccessibility Year CountryPerson
+CountDays / Person Total Glucose
+Samplesa Mean Range
+OhioT1DM [69, 68] Controlled 20201US 12 54 48–57 166,533
+T1DEXI [49, 94] Controlled 2022 US 497 27 3–28 3,785,253
+BIG IDEAs [20, 13] Open 2023 US 16 9.38 8–11 36,898
+DiaTrend [88, 89] Controlled 2023 US 54 512 31–1907 7,680,740
+ShanghaiT1DM [120, 119] Open 2023 China 12 15 7–42 15,695
+ShanghaiT2DM [120, 119] Open 2023 China 100 13 4–41 112,475
+T1DiabetesGranada [96, 95] Controlled 2024 Spain 736 350 8–1463 22,671,708
+AI-READI2[6, 21] Controlled 2024 US 1067 11 2–13 2,880,509
+UCHTT1DM [58, 57] Open 2024 Chile 20 6 3–8 29,174
+CGMacros3[43] Open 2025 US 45 11 8–20 629,825
+Glucose-ML Total 2,559 38,008,810
+1OhioT1DM was initially released in year 2018, then it was updated to the current version released in year 2020.
+2This study leverages v2.0.0 of the AI-READI dataset comprising data from 1067 participants that was collected
+between July 19, 2023 and July 31, 2024.
+3The CGMacros dataset includes glucose values from both Dexcom and Freestyle Libre CGMs for each
+participant. This study leverages glucose values from only the Dexcom CGMs for analysis.
+The specific sensors used for collecting glucose data across all datasets include CGMs manufactured
+by Medtronic (i.e. Medtronic Enlite and Guardian) [ 73], Dexcom (i.e., Dexcom G5, G6, and Pro)
+[27] and Abbott (i.e., FreeStyle Libre 1, 2 and Pro) [ 4]. In general, CGM sensors by Medtronic and
+Dexcom repeatedly measure glucose every 5 minutes, and have a lifespan of up to 7 days and up to
+10 days respectively, after which the sensor should be replaced. Meanwhile, Freestyle Libre CGMs
+by Abbott measure glucose every 15 minutes and have a lifespan of up to 14 days after which the
+sensor should be replaced. These CGMs are clinically-validated and FDA-approved sensors that
+report glucose readings between the range of 40 - 400 mg/dL [25, 11].
+3.1 Dataset accessibility
+Table 1 shows that each individual dataset within the Glucose-ML collection is publicly available
+either through open or controlled access. The individual datasets are hosted on several hosting sites,
+including dedicated institutional sites [ 69], Vivli [ 109], Physionet [ 84,39], Synapse [ 98], Figshare
+[44], Zenodo [3], FAIRhub [1], and Github [2].
+3.2 Ethics and fairness
+All datasets within the Glucose-ML collection are reported to be obtained in accordance with the
+relevant ethical guidelines, including approval by an appropriate institutional review board (IRB) and
+all participants provided informed consent. These datasets are fully de-identified such that they do
+not contain personally identifiable data. Additionally, a data use agreement (DUA) is required for
+datasets released via controlled access. Conversely, the majority of open access datasets are released
+with an appropriate license, such as the Open Data Commons Attribution License and the Creative
+Commons Attribution-NonCommercial License. The three exceptions are the UCHTT1DM [ 58] and
+ShanghaiT1DM & ShanghaiT2DM [ 120] datasets which are released openly on Github and Figshare,
+but do not include an associated license.
+4 Comparative analysis of diabetes datasets
+In this study, we conducted comparative analysis across all 10 publicly-available datasets within the
+Glucose-ML collection to elicit unique strengths and weaknesses of each dataset. Our comparative
+analysis can also guide in the process of selecting diabetes-relevant datasets to support development
+of robust AI solutions. While the majority of our analysis focuses on glucose data from CGMs, it is
+important to note that these datasets also include diabetes-relevant data from other sources such as
+insulin delivery systems, activity trackers, user logs/mobile apps, questionnaires/surveys, and medical
+4Questionnaire / Survey (Q)
+Demographic data (e.g.age, sex/gender, diabetes duration, race/ethnicity, etc.)
+Activity Tracker (A)
+Heart rateStep countSleep metricsSkin temperatureAccelerometry dataGalvanic skin response
+Insulin Delivery System (I)
+Insulin dosesCarbohydrate input
+Continuous Glucose Monitor (G)
+Glucose
+Self-Report / Mobile App (S)
+User logs (e.g.meal, exercise, medication, life events)
+Medical Record / Clinical Measurement (M) 
+Lab measurements (e.g.oral glucose test, hemoglobin A1C, cholesterol, triglycerides, etc.)ShanghaiT1DM: G, S, Q, MDiaTrend: G, I, Q, MBIG IDEAs: G, A, Q, MT1DEXI: G, I, A, S, Q, MOhioT1DM: G, I, A, S, QCGMacros: G, A, S, Q, MUCHTT1DM: G, I, A, SAI-READI: G, A, Q, MT1DiabetesGranada: G, Q, MShanghaiT2DM: G, S, Q, MGlucose-ML CollectionFigure 1: Overview of data types included within individual datasets in the Glucose-ML collection.
+record/clinical measurements. Fig. 1 presents a comparative overview of various data sources and
+data types across individual datasets in the Glucose-ML collection. From this figure, we can observe
+that the T1DEXI dataset is potentially the most comprehensive dataset as it includes glucose data,
+insulin-related data (e.g. insulin doses and carbohydrate input), activity tracker data (e.g. heart rate,
+step count, sleep metrics), user logs (e.g., meals, exercise), demographic data (e.g. age, sex/gender,
+diabetes duration), and lab measurements (e.g. hemoglobin A1C). However, T1DEXI comprise a
+population of people with T1D only, and mean data duration is 27 days/person as shown in Table 1.
+Fig. 2A presents a comparison of the populations and sample size represented in each individual
+dataset within the Glucose-ML collection. From this figure, we can observe that there are between
+12 - 1067 participants in each individual dataset. Five out of the ten datasets are solely from cohorts
+with T1D (50%), one dataset is solely from a cohort with T2D (10%), while the remaining four
+datasets include participants with T2D, prediabetes, and no diabetes (20%), T1D and no diabetes
+(10%) and prediabetes and no diabetes (10%). From Fig. 2B, we see that there are between 127 -
+257,782 days of CGM data in each dataset. The majority of longitudinal diabetes datasets (80%)
+include short durations of glucose data per participant (i.e., less than 60 days). Only DiaTrend [ 89]
+and T1DiabetesGranada [ 96] include long durations of glucose data per participant (i.e., more than 6
+months, and in many cases, multiple years of longitudinal glucose data).
+Given that glucose data in these longitudinal diabetes datasets is collected via wearable CGMs,
+missing data is not uncommon. Clinical consensus guidelines recommend the availability of more
+than 70% of possible CGM readings to provide adequate glucose data for evaluating diabetes
+management [ 11,25]. Therefore, in this study we leverage insights from prior work to identify
+missing CGM data when glucose readings are not present for more than three times the expected
+sampling rate of the distinct CGM used within each dataset (i.e., Dexcom, Medtronic, or FreeStyle
+Libre CGMs) [ 23,32,107]. For example, a Dexcom G6 CGM generally records glucose data
+every 5 minutes. Therefore, a period of missing data is identified when the difference between two
+consecutive timestamps of glucose readings has a duration of 15 minutes or more. Fig. 2C presents
+an overview of the percentage of CGM days with adequate (i.e., ≥70%) versus inadequate glucose
+data for each dataset. From this figure, we can observe that all datasets included in our collection
+have sufficient glucose data (i.e., < 25% missing data) within the data collection period of each study.
+Finally, we compared the blood glucose dynamics of participants within each dataset using clinically-
+validated metrics, namely time in glucose ranges [ 11]. These metrics quantify the percentage of
+glucose readings that are within the target/normal range of 70 - 180 mg/dL (TIR), below the target
+range (TBR), and above the target range (TAR). Fig. 2D presents an overview of the percentage of
+blood glucose values within the five clinically-relevant target ranges for each dataset. It is important
+to note that we only calculate the time in various glucose ranges on days with adequate glucose
+data (i.e., > 70% of CGM data available). From Fig. 2D, we can observe that DiaTrend [ 89] has
+the lowest TIR of 51%, whereas the clinical recommendation for persons with T1D is to maintain a
+5AB
+C
+D
+Figure 2: Comparative analysis of sample size and population (A), longitudinal glucose duration (B),
+data quality and sufficiency (C), and glucose dynamics (D) across 10 public diabetes datasets.
+target TIR of greater than 70% [ 11]. This significant difference between real-world blood glucose
+control in DiaTrend and the clinical recommendation shows that the DiaTrend dataset is the most
+dynamic and potentially the most challenging dataset to be used for developing and evaluating robust
+AI algorithms for populations with T1D. Conversely, the BIG IDEAs dataset [ 13,20] which was
+collected from a population with prediabetes and no diabetes has the highest TIR of 97.6%. This
+observation shows that BIG IDEAs dataset comprises more stable and in-range glucose dynamics so
+AI algorithms developed and evaluated solely on this dataset will likely report better performance
+due to the less challenging context.
+5 Case study: Blood glucose prediction
+Informed by several literature reviews within the field, we observed that blood glucose prediction is
+one of the most common task for which AI/ML algorithms are developed within the diabetes domain
+[5,22,31,38,41,48,113,114]. This is a classic time-series prediction problem for which statistical,
+traditional, and deep learning methods have been used to solve in prior literature. Given this, we
+conduct a case study for the task of predicting blood glucose 30-minutes ahead using two naïve
+baseline methods recommended to serve as benchmarks for comparison with new and more advanced
+AI algorithms. The objective of this case study is not to present a novel AI algorithm for the task,
+but to characterize and compare the performance of naïve prediction algorithms across 10 publicly
+available diabetes datasets within the GlucoseML collection.
+65.1 Naïve Baseline Algorithms
+Building on best practice guidelines [ 48], we implement two naïve models, including 1) a zero-order
+hold predictor, and 2) a simple linear regression predictor, for the task of blood glucose prediction.
+•Zero-hold predictor (also known as a persistent baseline) simply assumes the predicted
+value will not change in the future. Therefore, when using a zero-hold predictor for blood
+glucose prediction 30-mins ahead, we simply use the exact glucose value 30 minutes prior
+as the prediction 30 minutes ahead. This baseline implementation is described as linear
+extrapolation in the work by Fox et al. [34].
+•Simple linear regression predictor fits a regression line across the most recent history of a
+given duration ( H), then uses this regression line to predict blood glucose 30 minutes ahead
+[48]. In our implementation of a simple linear regression predictor, we used a history of
+between 10 - 30 minutes based on the sampling frequency of the specific CGM used for
+data collection within each dataset. For studies that used a Dexcom or Medtronic CGM,
+both of which record approximately one glucose reading every 5 minutes, we used a history
+duration of 10 minutes with the goal of having three consecutive glucose readings at t,
+t= 5mins , and t+ 10mins as the basis for fitting a regression line. Conversely, for
+studies that used a FreeStyle Libre CGM (i.e., ShanghaiT1DM & ShanghaiT2DM [ 119],
+and T1DiabetesGranada [ 95]), we used a history duration of 30 minutes with the similar
+goal of having three consecutive glucose readings t,t= 15mins ,t+ 30mins as the basis
+for fitting a regression line.
+5.2 Data Cleaning
+Toward the goal of predicting blood glucose 30 minutes ahead using the aforementioned naïve
+baseline algorithms, we started by conducting simple data cleaning steps to remove unrealistic
+glucose readings within individual datasets in the GlucoseML collection. Our first data cleaning
+step included removing non-numeric glucose readings and glucose readings that are not within the
+standard CGM range of 40 - 400mg/dL. Examples of excluded glucose recordings include recordings
+of "LOW" and "HIGH" in place of an actual glucose value in the AI-READI dataset. Following
+this, we removed consecutive glucose recordings with an unrealistic rate of change. Informed by the
+paper by DeSalvo and Buckingham, we removed consecutive glucose readings that were less than
+30 seconds apart and/or that had a rate of change greater than 20mg/dL/min, which is 5 times the
+reported rate of change for detecting missed meal boluses [ 26]. Table 5 in the Appendix provides a
+summary of the total glucose recordings in each dataset before the data cleaning steps, number of
+recordings excluded, and total glucose samples after data cleaning.
+5.3 Algorithm Implementation, Handling Missing Data, and Performance Evaluation
+Since our two naïve baseline algorithms have minimal or no parameters that need to be learned
+from a training dataset, our implementation of these methods was run on the full data duration of
+participants within the individual datasets (except for OhioT1DM). In the case of OhioT1DM [ 68]
+where a train/test split was provided by the original data creators, we evaluated the naïve algorithms
+on the apportioned test set only. However, our implementation did not require splitting the other
+datasets into a training, validation, and/or test set. Informed by best practice guidelines, we excluded
+periods of missing data from our analysis to avoid interpolation or extrapolation approaches that
+can introduce errors into the prediction model and reported accuracy [ 48]. Finally, to facilitate easy
+comparison of the performance of naïve prediction algorithms across 10 publicly available diabetes
+datasets, we report the accuracy of each prediction method using root mean squared error (RMSE)
+[46,48]. A lower RMSE equates to less prediction error, while a higher RMSE equates to more
+prediction error and thus worse prediction performance.
+Computing Resources : All experiments were conducted on a MacBook Air (Apple M2 CPU, 8 GB
+and 16GB RAM), and run using CPUs only. The total estimated preprocessing time is ≈70 seconds.
+The runtime varied depending on the dataset duration, ranging from ≈1 minute to 4 hours per dataset.
+Per Table 1 and Appendix Table 5, we see that T1DiabetesGranada [ 95,96] has the largest number of
+glucose samples (22.6 million) with an average of 1 year of glucose data per participant, and up to
+4 years of glucose data across individual participants. As a result, this dataset required the longest
+runtime. The total estimated storage required for analysis in this study is ≈8 GB.
+7Figure 3: Performance overview for two naïve baseline algorithms, zero-order hold and simple linear
+regression, predicting blood glucose 30 minutes ahead using 10 publicly available diabetes datasets.
+5.4 Results for Blood Glucose Prediction
+Fig. 3 and Table 2 present the results for predicting blood glucose 30 minutes ahead using the
+aforementioned naïve baseline methods. From Fig. 3, we observe that the zero-order hold predictor
+performed better as evident by the lower RMSE compared to the simple linear regression predictor
+in all 10 diabetes datasets. Given this, we will focus the rest of our analysis on the results from the
+zero-order predictor for assessing the performance difference across datasets. From Table 2, we
+observe that the zero-order hold predictor achieved the lowest RMSE of 16.1 ±2.72 mg/dL on BIG
+IDEAs, meanwhile the same method achieved the highest RMSE of 28.14 ±4.96 mg/dL on DiaTrend.
+A Mann-Whitney U test [ 72] was performed to compare the glucose prediction performance of the
+zero-order hold predictor on the BIG IDEAs and DiaTrend datasets. We found that there is a
+statistically significant difference in the glucose prediction performance of the same method on the
+BIG IDEAs dataset and the DiaTrend dataset; U-statistic = 8, Z= -5.92, p=3.16e−9. These findings
+suggest that the dataset used for developing a blood glucose prediction algorithm significantly affects
+the performance obtained.
+To ensure a more fair comparison of blood glucose prediction performance across datasets, we
+identified diabetes datasets with T2D, preD, and ND for comparison, and diabetes datasets with
+T1D only for comparison. We performed a Mann-Whitney U test to compare the glucose prediction
+performance on the BIG IDEAs and CGMacros datasets, both of which are more comparable in
+the represented population. Similarly, we found that there is a statistically significant difference in
+the glucose prediction performance on these two groups; U-statistic = 185, Z= -2.86, p= 0.004. To
+also compare the prediction performance across T1D only datasets, we observed that the zero-order
+hold predictor achieved the lowest RMSE of 20.58 ±3.39 mg/dL on the ShanghaiT1DM dataset
+and the highest RMSE of 28.14 ±4.96 mg/dL on the DiaTrend dataset - see Table 2. We also
+performed a Mann-Whitney U test to compare the glucose prediction performance on DiaTrend and
+ShanghaiT1DM datasets; both solely from T1D populations. We found that there is a statistically
+significant difference in the glucose prediction performance on these two groups; U-statistic = 584,
+Z= 4.33, p=1.6e−5. These results further support that the dataset used for developing and evaluating
+a blood glucose prediction algorithm significantly affects the prediction performance obtained.
+6 Discussion
+In this paper, we present Glucose-ML - a collection of 10 publicly available diabetes datasets to
+accelerate development and evaluation of transparent, reproducible, and robust AI solutions. This
+collection comprises longitudinal glucose and other data from 2500+ people living with diabetes
+(i.e., T1D and T2D) and people living without diabetes (i.e., prediabetes and no diabetes). The
+Glucose-ML collection includes over 300,000 days with CGM data and a total of 38 million glucose
+samples across all individual diabetes datasets. To our knowledge, the Glucose-ML collection is
+the largest and most comprehensive in literature to date. In addition to providing a review of recent
+8Table 2: Mean RMSE (std) for predicting blood glucose 30-minutes ahead using two naïve baselines.
+Lower RMSE means less prediction error while higher RMSE means more prediction error.
+Mean RMSE (std) mg/dL
+Publicly Available
+Diabetes DatasetsZero-order Hold Simple Linear Regression
+OhioT1DM [68, 69] 23.27 (2.92) 28.08 (4.80)
+T1DEXI [94, 49] 24.03 (5.38) 29.80 (6.28)
+BIG IDEAs [13, 20] 16.11 (2.72) 23.86 (3.91)
+DiaTrend [89, 88] 28.14 (4.96) 35.00 (5.29)
+ShanghaiT1DM [119, 120] 20.58 (3.39) 21.70 (3.20)
+ShanghaiT2DM [119, 120] 17.51 (4.04) 19.82 (4.48)
+T1DiabetesGranada [95, 96] 24.81 (5.17) 28.08 (5.70)
+AI-READI [21, 6] 19.16 (4.96) 30.67 (7.06)
+UCHTT1DM [57, 58] 19.28 (7.10) 30.41 (4.00)
+CGMacros [43] 19.90 (4.68) 30.59 (5.64)
+publicly available diabetes dataset, this study includes comparative analysis of each dataset and a
+case study for blood glucose predicting using these datasets. Our results provide a benchmark for
+predicting blood glucose using each dataset within the Glucose-ML collection. Furthermore, our
+results show that the same AI algorithm can have significantly different results when developed and
+evaluated on different datasets.
+Although this study did not include all public diabetes datasets available to facilitate AI development,
+we provide a more comprehensive review and analysis compared what has been presented in prior
+work. For example, Jacobs et al. [ 48] present a review of current real-world diabetes datasets, but
+only include three datasets, namely OhioT1DM [ 68], T1DEXI [ 94], and Tidepool Big Data Donation
+[105]. The Tidepool Big Data Donation dataset has been used for data-centric analysis in a few
+studies [ 9,12,77,76,87], however, this dataset is not publicly available so it was not included
+in the Glucose-ML collection. Some examples of other open diabetes datasets include OpenAPS
+[74], REPLACE-BG [ 8] and Maastricht study [ 99,106]. The OpenAPS dataset has been used for
+data-centric analysis and developing AI solutions in prior work [ 45,100]. However, this dataset is
+collected from a highly selective, technology-adept population of individuals with T1D who use a
+fully-closed loop automated insulin delivery (AID) system for diabetes management so it was not
+included in the Glucose-ML collection [ 74]. Meanwhile, the REPLACE-BG [ 8] (collected in year
+2015 - 2016) and Maastricht study [ 99,106] (initially reported in 2014) datasets were not included in
+the Glucose-ML collection because they are not recent and were collected/released before year 2018.
+6.1 Recommendations for developing robust AI solutions for diabetes and beyond
+Comprehensive recommendation on developing robust AI algorithms is beyond the scope of this
+work, so we refer readers to related work [ 42,48,63]. Here, we present three recommendations that
+build on findings from this study.
+•Data Selection : A best practice guideline for AI development and evaluation is to leverage
+multiple datasets with representative subgroups and representative variability for the target
+population and task. For diabetes-centered AI solutions, the selected datasets should include
+individuals with representative variation in glycemic control, hemoglobin A1C, age groups,
+geographical locations, racial/ethnic groups, gender, and more - see Table 1, 3 and 4.
+•Model Design : Newly proposed AI models should always be compared with a naïve baseline
+model. Several studies in literature do not include a baseline (e.g. [ 62,90,15,115]) or only
+include regression-based baselines or other more advanced baselines (e.g. [ 45,40,121,123]).
+A best practice guideline is to include a zero-order hold predictor as a naïve baseline for
+blood glucose prediction tasks in addition to any other baselines. This is especially critical
+when a private dataset is used for AI development and evaluation.
+•Model Evaluation : To enable comparison with related work, it is critical for newly proposed
+AI solutions to not only be developed with simulated and/or private datasets (e.g. [ 59,75,52,
+964]). A best practice guideline is to develop and evaluate AI solutions on publicly available
+datasets, in addition to any private datasets. Additionally, models should not be evaluated on
+test sets that have been smoothed or that include interpolation of missing data [ 48]. These
+common pitfalls can lead to invalid estimates of accuracy.
+6.2 Ethical considerations
+Representation across the Glucose-ML collection : We assess representation of the Glucose-ML
+collection across three dimensions: sex/gender, age, and race/ethnicity. With regard to sex/gender,
+Table 3 in the Appendix shows that the Glucose-ML collection includes a fair representation across
+sex/gender (total: 1077 males (42%) and 1482 females (58%)). With regards to age, the Glucose-ML
+collection does not include representation of children and/or adolescents - see Table 3. However,
+T1D and increasing incidences of prediabetes and T2D are not uncommon in pediatric populations
+[60,80,118]. With regard to race/ethnicity, research shows that diabetes is more prevalent across
+certain racial/ethnic groups [ 19]. For example, in US adults, diabetes is more prevalent amongst
+American Indian and Alaska Native adults, followed by non-Hispanic Black adults, and adults
+of Hispanic origin [ 16]. However, data on race/ethnicity is only reported in a few datasets (i.e.,
+T1DEXI [ 49], DiaTrend [ 88], AI-READI [ 6], and CGMacros [ 43]. Of the four datasets (40%)
+that report race/ethnicity, T1DEXI [ 94,49] and DiaTrend [ 89,88] have a large representation of
+non-Hispanic Whites/Caucasians; 87% and 89%, respectively. CGMacros has a large representation
+of Hispanics/Latinos (75.5%) [ 43]. While AI-READI has a more balanced representation of persons
+from Hispanic (21%), Asian (23%), Black (27%), and White (29%) race/ethnic groups [6].
+Intended Data Use: The Glucose-ML collection has been curated to accelerate research and
+development of AI solutions for diabetes and beyond. It is imperative to respect the privacy of
+participants who have openly shared their data with qualified researchers/innovators. As a result, data
+users should not attempt to re-identify participants, including for re-identification theory research.
+6.3 Limitations
+Albeit the strengths of this work, there are some limitations that should be acknowledged. Firstly,
+this paper focuses solely on evaluating longitudinal glucose data from publicly available diabetes
+datasets. Hence, we did not delve into other longitudinal/diabetes-related data streams within each
+dataset, such as insulin-related data (e.g. insulin and carbohydrate input), activity tracker data (e.g.
+heart rate, step count, and sleep metrics), user logs (e.g. medication, meals, and life events), and
+clinical measurements (e.g. hemoglobin A1C and cholesterol). Secondly, despite our faithful attempt
+to provide a review and comparative analysis of recent open diabetes datasets, there is a chance that
+we unintentionally omitted some relevant datasets. For example, two recent T1D datasets, D1NAMO
+[29,28] and T1DEXIP [ 50,93], were not included in the Glucose-ML collection. When writing this
+manuscript, the authors were awaiting access to T1DEXIP and had not discovered D1NAMO.
+References
+[1] Fairhub: Make breakthrough discoveries with ai-ready datasets. https://fairhub.io/ .
+[2] Github. https://github.com/ .
+[3] Zenodo. https://zenodo.org/ .
+[4] A BBOTT . FreeStyle Libre. https://www.freestyle.abbott/ .
+[5]AFSANEH , E., S HARIFDINI , A., G HAZZAGHI , H., AND GHOBADI , M. Z. Recent ap-
+plications of machine learning and deep learning models in the prediction, diagnosis, and
+management of diabetes: a comprehensive review. Diabetology & Metabolic Syndrome 14 , 1
+(2022), 196.
+[6]AI-READI C ONSORTIUM . Flagship Dataset of Type 2 Diabetes from the AI-READI Project
+(2.0.0) [Data set]. https://doi.org/10.60775/fairhub.2 .
+[7]AJJAN , R. A., B ATTELINO , T., C OS, X., D ELPRATO , S., P HILIPS , J.-C., M EYER , L.,
+SEUFERT , J., AND SEIDU , S.Continuous glucose monitoring for the routine care of type 2
+diabetes mellitus. Nature Reviews Endocrinology 20 , 7 (2024), 426–440.
+10[8]ALEPPO , G., R UEDY , K. J., R IDDLESWORTH , T. D., K RUGER , D. F., P ETERS , A. L.,
+HIRSCH , I., B ERGENSTAL , R. M., T OSCHI , E., A HMANN , A. J., S HAH , V. N., ET AL .
+REPLACE-BG: a randomized trial comparing continuous glucose monitoring with and without
+routine blood glucose monitoring in adults with well-controlled type 1 diabetes. Diabetes care
+40, 4 (2017), 538–545.
+[9]BARTOLOME , A., AND PRIOLEAU , T.A computational framework for discovering digital
+biomarkers of glycemic control. NPJ digital medicine 5 , 1 (2022), 111.
+[10] B ARTOLOME , A., S HAH , S., AND PRIOLEAU , T. Glucomine: A case for improving the use
+of wearable device data in diabetes management. Proceedings of the ACM on Interactive,
+Mobile, Wearable and Ubiquitous Technologies 5 , 3 (2021), 1–24.
+[11] BATTELINO , T., D ANNE , T., B ERGENSTAL , R. M., A MIEL , S. A., B ECK, R., B IESTER , T.,
+BOSI, E., B UCKINGHAM , B. A., C EFALU , W. T., C LOSE , K. L., ET AL .Clinical targets for
+continuous glucose monitoring data interpretation: recommendations from the international
+consensus on time in range. Diabetes care 42 , 8 (2019), 1593–1603.
+[12] BELSARE , P., B ARTOLOME , A., S TANGER , C., AND PRIOLEAU , T.Understanding temporal
+changes and seasonal variations in glycemic trends using wearable data. Science advances 9 ,
+38 (2023), eadg2132.
+[13] BENT, B., C HO, P. J., H ENRIQUEZ , M., W ITTMANN , A., T HACKER , C., F EINGLOS , M.,
+CROWLEY , M. J., AND DUNN , J. P. Engineering digital biomarkers of interstitial glucose
+from noninvasive smartwatches. NPJ Digital Medicine 4 , 1 (2021), 89.
+[14] BOWLER , A.-L. M., W HITFIELD , J., M ARSHALL , L., C OFFEY , V. G., B URKE , L. M.,
+AND COX, G. R. The use of continuous glucose monitors in sport: possible applications and
+considerations. International Journal of Sport Nutrition and Exercise Metabolism 33 , 2 (2022),
+121–132.
+[15] CARVALHO , C. F., AND LIANG , Z.Glucose prediction with long short-term memory (lstm)
+models in three distinct populations. Engineering Proceedings 82 , 1 (2024), 87.
+[16] CENTERS FOR DISEASE CONTROL AND PREVENTION . National Diabetes Statistics Report.
+https://www.cdc.gov/diabetes/php/data-research/ .
+[17] CHANG , V., B AILEY , J., X U, Q. A., AND SUN, Z.Pima indians diabetes mellitus classifica-
+tion based on machine learning (ml) algorithms. Neural Computing and Applications 35 , 22
+(2023), 16157–16173.
+[18] CHEN, R. J., W ANG , J. J., W ILLIAMSON , D. F., C HEN, T. Y., L IPKOVA , J., L U, M. Y.,
+SAHAI , S., AND MAHMOOD , F.Algorithmic fairness in artificial intelligence for medicine
+and healthcare. Nature biomedical engineering 7 , 6 (2023), 719–742.
+[19] CHENG , Y. J., K ANAYA , A. M., A RANETA , M. R. G., S AYDAH , S. H., K AHN , H. S.,
+GREGG , E. W., F UJIMOTO , W. Y., AND IMPERATORE , G. Prevalence of diabetes by race
+and ethnicity in the united states, 2011-2016. Jama 322 , 24 (2019), 2389–2398.
+[20] CHO, P., K IM, J., B ENT, B., AND DUNN , J. BIG IDEAs Lab Glycemic Variability and
+Wearable Device Data (version 1.1.2). https://doi.org/10.13026/zthx-5212 , 2023.
+[21] CONSORTIUM , A.-R. AI-READI: Rethinking ai data collection, preparation and sharing in
+diabetes research and beyond. Nature Metabolism (2024), 1–3.
+[22] CONTRERAS , I., AND VEHI, J.Artificial intelligence for diabetes management and decision
+support: literature review. Journal of medical Internet research 20 , 5 (2018), e10775.
+[23] CUI, Y., S TANGER , C., AND PRIOLEAU , T.Seasonal, weekly, and individual variations in
+long-term use of wearable medical devices for diabetes management. Scientific Reports 15 , 1
+(2025), 13386.
+[24] DALY, A., AND HOVORKA , R. Technology in the management of type 2 diabetes: present
+status and future prospects. Diabetes, Obesity and Metabolism 23 , 8 (2021), 1722–1732.
+11[25] DANNE , T., N IMRI , R., B ATTELINO , T., B ERGENSTAL , R. M., C LOSE , K. L., D EVRIES ,
+J. H., G ARG, S., H EINEMANN , L., H IRSCH , I., A MIEL , S. A., ET AL .International
+consensus on use of continuous glucose monitoring. Diabetes care 40 , 12 (2017), 1631–1640.
+[26] DESALVO , D., AND BUCKINGHAM , B. Continuous glucose monitoring: current use and
+future directions. Current diabetes reports 13 (2013), 657–662.
+[27] D EXCOM . Dexcom G6. https://www.dexcom.com/g6-cgm-system .
+[28] DUBOSSON , F., R ANVIER , J.-E., B ROMURI , S., C ALBIMONTE , J.-P., R UIZ, J., AND
+SCHUMACHER , M. The open d1namo dataset: A multi-modal dataset for research on non-
+invasive type 1 diabetes management. https://doi.org/10.5281/zenodo.5651217 .
+[29] DUBOSSON , F., R ANVIER , J.-E., B ROMURI , S., C ALBIMONTE , J.-P., R UIZ, J., AND
+SCHUMACHER , M. The open D1NAMO dataset: A multi-modal dataset for research on
+non-invasive type 1 diabetes management. Informatics in Medicine Unlocked 13 (2018),
+92–100.
+[30] ELLAHHAM , S.Artificial intelligence: the future for diabetes care. The American journal of
+medicine 133 , 8 (2020), 895–900.
+[31] FELIZARDO , V., G ARCIA , N. M., P OMBO , N., AND MEGDICHE , I.Data-based algorithms
+and models using diabetics real data for blood glucose and hypoglycaemia prediction–a
+systematic literature review. Artificial intelligence in medicine 118 (2021), 102120.
+[32] FONDA , S. J., L EWIS , D. G., AND VIGERSKY , R. A. Minding the gaps in continuous
+glucose monitoring: a method to repair gaps to achieve more accurate glucometrics. Journal
+of diabetes science and technology 7 , 1 (2013), 88–92.
+[33] FOR HEALTH RESEARCH , J. C. Jaeb center for health research. https://www.jaeb.org/ ,
+addendum = "Accessed: March 2025".
+[34] FOX, I., A NG, L., J AISWAL , M., P OP-BUSUI , R., AND WIENS , J. Deep multi-output
+forecasting: Learning to accurately predict blood glucose trajectories. In Proceedings of the
+24th ACM SIGKDD international conference on knowledge discovery & data mining (2018),
+pp. 1387–1395.
+[35] FOX, I., L EE, J., P OP-BUSUI , R., AND WIENS , J.Deep reinforcement learning for closed-
+loop blood glucose control. In Machine Learning for Healthcare Conference (2020), PMLR,
+pp. 508–536.
+[36] FRANSSEN , W. M., F RANSSEN , G. H., S PAAS , J., S OLMI , F., AND EIJNDE , B. O. Can
+consumer wearable activity tracker-based interventions improve physical activity and car-
+diometabolic health in patients with chronic diseases? a systematic review and meta-analysis
+of randomised controlled trials. International Journal of Behavioral Nutrition and Physical
+Activity 17 (2020), 1–20.
+[37] GAUTIER , T., Z IEGLER , L. B., G ERBER , M. S., C AMPOS -NÁÑEZ , E., AND PATEK , S. D.
+Artificial intelligence and diabetes technology: A review. Metabolism 124 (2021), 154872.
+[38] GHIMIRE , S., C ELIK , T., G ERDES , M., AND OMLIN , C. W. Deep learning for blood glucose
+level prediction: How well do models generalize across different data sets? Plos one 19 , 9
+(2024), e0310801.
+[39] GOLDBERGER , A. L., A MARAL , L. A., G LASS , L., H AUSDORFF , J. M., I VANOV , P. C.,
+MARK, R. G., M IETUS , J. E., M OODY , G. B., P ENG, C.-K., AND STANLEY , H. E.
+Physiobank, physiotoolkit, and physionet: components of a new research resource for complex
+physiologic signals. circulation 101 , 23 (2000), e215–e220.
+[40] GU, K., D ANG , R., AND PRIOLEAU , T. Neural physiological model: A simple module
+for blood glucose prediction. In 2020 42nd annual international conference of the IEEE
+engineering in medicine & biology society (embc) (2020), IEEE, pp. 5476–5481.
+12[41] GUAN, Z., L I, H., L IU, R., C AI, C., L IU, Y., L I, J., W ANG, X., H UANG , S., W U, L., L IU,
+D., ET AL .Artificial intelligence in diabetes management: advancements, opportunities, and
+challenges. Cell Reports Medicine 4 , 10 (2023).
+[42] GUNDERSEN , O. E., C OAKLEY , K., K IRKPATRICK , C., AND GIL, Y. Sources of irrepro-
+ducibility in machine learning: A review, 2023.
+[43] GUTIERREZ -OSUNA , R., K ERR, D., M ORTAZAVI , B., AND DAS, A. Cgmacros: a scientific
+dataset for personalized nutrition and diet monitoring (version 1.0.0). https://doi.org/10.
+13026/3z8q-x658 , 2025.
+[44] H AHNEL , M. Figshare: A digital science solution. https://figshare.com/ .
+[45] HAMEED , H., AND KLEINBERG , S. Comparing machine learning techniques for blood
+glucose forecasting using free-living and patient generated data. In Machine Learning for
+Healthcare Conference (2020), PMLR, pp. 871–894.
+[46] HODSON , T. O. Root mean square error (rmse) or mean absolute error (mae): When to use
+them or not. Geoscientific Model Development Discussions 2022 (2022), 1–10.
+[47] HOLZER , R., B LOCH , W., AND BRINKMANN , C. Continuous glucose monitoring in healthy
+adults—possible applications in health care, wellness, and sports. Sensors 22 , 5 (2022), 2030.
+[48] JACOBS , P. G., H ERRERO , P., F ACCHINETTI , A., V EHI, J., K OVATCHEV , B., B RETON ,
+M. D., C INAR , A., N IKITA , K. S., D OYLE , F. J., B ONDIA , J., ET AL .Artificial intelligence
+and machine learning for improving glycemic control in diabetes: Best practices, pitfalls, and
+opportunities. IEEE reviews in biomedical engineering 17 (2023), 19–41.
+[49] JAEB CENTER FOR HEALTH RESEARCH . Type 1 diabetes exercise initiative: The effect
+of exercise on glycemic control in type 1 diabetes study. https://doi.org/10.25934/
+PR00008428 .
+[50] JAEB CENTER FOR HEALTH RESEARCH . Type 1 diabetes exercise initiative: The effect
+of exercise on glycemic control in type 1 diabetes study. https://doi.org/10.25934/
+PR00008429 .
+[51] KESHET , A., S HILO , S., G ODNEVA , A., T ALMOR -BARKAN , Y., A VIV, Y., S EGAL , E.,
+AND ROSSMAN , H. CGMap: characterizing continuous glucose monitor data in thousands of
+non-diabetic individuals. Cell metabolism 35 , 5 (2023), 758–769.
+[52] KIM, D.-Y., C HOI, D.-S., K ANG , A. R., W OO, J., H AN, Y., C HUN , S. W., AND KIM,
+J.Intelligent ensemble deep learning system for blood glucose prediction using genetic
+algorithms. Complexity 2022 , 1 (2022), 7902418.
+[53] KLONOFF , D. C., A HN, D., AND DRINCIC , A. Continuous glucose monitoring: a review of
+the technology and clinical use. Diabetes Research and Clinical Practice 133 (2017), 178–192.
+[54] KLONOFF , D. C., N GUYEN , K. T., X U, N. Y., G UTIERREZ , A., E SPINOZA , J. C., AND
+VIDMAR , A. P. Use of continuous glucose monitors by people without diabetes: an idea
+whose time has come? Journal of diabetes science and technology 17 , 6 (2023), 1686–1697.
+[55] KOSTKOVA , P., B REWER , H., D ELUSIGNAN , S., F OTTRELL , E., G OLDACRE , B., H ART,
+G., K OCZAN , P., K NIGHT , P., M ARSOLIER , C., M CKENDRY , R. A., ET AL .Who owns the
+data? open data for healthcare. Frontiers in public health 4 (2016), 7.
+[56] KOVATCHEV , B. P., B RETON , M., D ALLA MAN, C., AND COBELLI , C. In silico preclinical
+trials: a proof of concept in closed-loop control of type 1 diabetes, 2009.
+[57] LANGARICA , S., DE LA VEGA, D., C ARIMAN , N., M IRANDA , M., A NDRADE , D. C.,
+NÚÑEZ , F., AND RODRIGUEZ -FERNANDEZ , M. Deep learning-based glucose prediction
+models: a guide for practitioners and a curated dataset for improved diabetes management.
+IEEE Open Journal of Engineering in Medicine and Biology 5 (2024), 467–475.
+13[58] LANGARICA , S., DE LA VEGA, D., C ARIMAN , N., M IRANDA , M., A NDRADE , D. C.,
+NÚÑEZ , F., AND RODRIGUEZ -FERNANDEZ , M. UCHTT1DM Diabetes Dataset. https:
+//github.com/fisiologiacuantitativauc/UC_HT_T1DM , 2024.
+[59] LANGARICA , S., R ODRIGUEZ -FERNANDEZ , M., N ÚÑEZ , F., AND DOYLE III, F. J. A
+meta-learning approach to personalized blood glucose prediction in type 1 diabetes. Control
+Engineering Practice 135 (2023), 105498.
+[60] LAWRENCE , J. M., D IVERS , J., I SOM , S., S AYDAH , S., I MPERATORE , G., P IHOKER , C.,
+MARCOVINA , S. M., M AYER -DAVIS , E. J., H AMMAN , R. F., D OLAN , L., ET AL .Trends
+in prevalence of type 1 and type 2 diabetes in children and adolescents in the us, 2001-2017.
+Jama 326 , 8 (2021), 717–727.
+[61] LEE, S., K IM, J., P ARK, S. W., J IN, S.-M., AND PARK, S.-M. Toward a fully automated
+artificial pancreas system using a bioinspired reinforcement learning design: In silico validation.
+IEEE Journal of Biomedical and Health Informatics 25 , 2 (2020), 536–546.
+[62] LEE, S.-M., K IM, D.-Y., AND WOO, J.Glucose transformer: Forecasting glucose level
+and events of hyperglycemia and hypoglycemia. IEEE Journal of Biomedical and Health
+Informatics 27 , 3 (2023), 1600–1611.
+[63] LEKADIR , K., F RANGI , A. F., P ORRAS , A. R., G LOCKER , B., C INTAS , C., L ANGLOTZ ,
+C. P., W EICKEN , E., A SSELBERGS , F. W., P RIOR , F., C OLLINS , G. S., ET AL .FUTURE-
+AI: International consensus guideline for trustworthy and deployable artificial intelligence in
+healthcare. bmj 388 (2025).
+[64] LI, K., D ANIELS , J., L IU, C., H ERRERO , P., AND GEORGIOU , P.Convolutional recurrent
+neural networks for glucose prediction. IEEE journal of biomedical and health informatics 24 ,
+2 (2019), 603–613.
+[65] LIN, R., B ROWN , F., J AMES , S., J ONES , J., AND EKINCI , E.Continuous glucose monitoring:
+a review of the evidence in type 1 and 2 diabetes mellitus. Diabetic Medicine 38 , 5 (2021),
+e14528.
+[66] LU, B., C UI, Y., B ELSARE , P., S TANGER , C., Z HOU , X., AND PRIOLEAU , T.Mealtime
+prediction using wearable insulin pump data to support diabetes management. Scientific
+Reports 14 , 1 (2024), 21013.
+[67] MAN, C. D., M ICHELETTO , F., L V, D., B RETON , M., K OVATCHEV , B., AND COBELLI ,
+C.The uva/padova type 1 diabetes simulator: new features. Journal of diabetes science and
+technology 8 , 1 (2014), 26–34.
+[68] MARLING , C., AND BUNESCU , R. The ohiot1dm dataset for blood glucose level prediction:
+Update 2020. In CEUR workshop proceedings (2020), vol. 2675, p. 71.
+[69] MARLING , C., AND BUNESCU , R. The OhioT1DM dataset. https://webpages.
+charlotte.edu/rbunescu/data/ohiot1dm/OhioT1DM-dataset.html , 2020.
+[70] MARTINSSON , J., S CHLIEP , A., E LIASSON , B., AND MOGREN , O. Blood glucose prediction
+with variance estimation using recurrent neural networks. Journal of Healthcare Informatics
+Research 4 (2020), 1–18.
+[71] MCDERMOTT , M. B., W ANG , S., M ARINSEK , N., R ANGANATH , R., F OSCHINI , L., AND
+GHASSEMI , M. Reproducibility in machine learning for health research: Still a ways to go.
+Science Translational Medicine 13 , 586 (2021), eabb1655.
+[72] MCKNIGHT , P. E., AND NAJAB , J. Mann-whitney u test. The Corsini encyclopedia of
+psychology (2010), 1–1.
+[73] MEDTRONIC . Medtronic Guardian ™Connect continuous glucose monitoring (CGM). https:
+//www.medtronicdiabetes.com/ .
+[74] MELMER , A., Z ÜGER , T., L EWIS , D. M., L EIBRAND , S., S TETTLER , C., AND LAIMER , M.
+Glycaemic control in individuals with type 1 diabetes using an open source artificial pancreas
+system (openaps). Diabetes, Obesity and Metabolism 21 , 10 (2019), 2333–2337.
+14[75] MOHEBBI , A., J OHANSEN , A. R., H ANSEN , N., C HRISTENSEN , P. E., T ARP, J. M.,
+JENSEN , M. L., B ENGTSSON , H., AND MØRUP , M. Short term blood glucose prediction
+based on continuous glucose monitoring data. In 2020 42nd Annual International Conference
+of the IEEE Engineering in Medicine & Biology Society (EMBC) (2020), IEEE, pp. 5140–5145.
+[76] MOSQUERA -LOPEZ , C., D ODIER , R., T YLER , N., R ESALAT , N., AND JACOBS , P.Leverag-
+ing a big dataset to develop a recurrent neural network to predict adverse glycemic events in
+type 1 diabetes. IEEE journal of biomedical and health informatics (2019).
+[77] MOSQUERA -LOPEZ , C., AND JACOBS , P. G. Incorporating glucose variability into glucose
+forecasting accuracy assessment using the new glucose variability impact index and the
+prediction consistency index: An lstm case example. Journal of Diabetes Science and
+Technology 16 , 1 (2022), 7–18.
+[78] NAZ, H., AND AHUJA , S.Deep learning approach for diabetes prediction using pima indian
+dataset. Journal of Diabetes & Metabolic Disorders 19 (2020), 391–403.
+[79] NAZER , L. H., Z ATARAH , R., W ALDRIP , S., K E, J. X. C., M OUKHEIBER , M., K HANNA ,
+A. K., H ICKLEN , R. S., M OUKHEIBER , L., M OUKHEIBER , D., M A, H., ET AL .Bias in
+artificial intelligence algorithms and recommendations for mitigation. PLOS digital health 2 ,
+6 (2023), e0000278.
+[80] NOBILI , V., M ANTOVANI , A., C IANFARANI , S., A LISI, A., M OSCA , A., S ARTORELLI ,
+M. R., M AFFEIS , C., L OOMBA , R., B YRNE , C. D., AND TARGHER , G. Prevalence of
+prediabetes and diabetes in children and adolescents with biopsy-proven non-alcoholic fatty
+liver disease. Journal of hepatology 71 , 4 (2019), 802–810.
+[81] NOMURA , A., N OGUCHI , M., K OMETANI , M., F URUKAWA , K., AND YONEDA , T.Artificial
+intelligence in current diabetes management and prediction. Current Diabetes Reports 21 , 12
+(2021), 61.
+[82] NWOKOLO , M., AND HOVORKA , R. The artificial pancreas and type 1 diabetes. The Journal
+of Clinical Endocrinology & Metabolism 108 , 7 (2023), 1614–1623.
+[83] PASTORINO , R., D EVITO, C., M IGLIARA , G., G LOCKER , K., B INENBAUM , I., R ICCIARDI ,
+W., AND BOCCIA , S.Benefits and challenges of big data in healthcare: an overview of the
+european initiatives. European journal of public health 29 , Supplement_3 (2019), 23–27.
+[84] PHYSIO NETTEAM . Physionet: The research resource for complex physiological signals.
+https://vivli.org/ .
+[85] PINEAU , J., V INCENT -LAMARRE , P., S INHA , K., L ARIVIÈRE , V., B EYGELZIMER , A.,
+D’ALCHÉ BUC, F., F OX, E., AND LAROCHELLE , H. Improving reproducibility in machine
+learning research (a report from the neurips 2019 reproducibility program). Journal of machine
+learning research 22 , 164 (2021), 1–20.
+[86] POLAT , K., AND GÜNE ¸ S , S. An expert system approach based on principal component
+analysis and adaptive neuro-fuzzy inference system to diagnosis of diabetes disease. Digital
+signal processing 17 , 4 (2007), 702–710.
+[87] PRASANNA , S., B ARUA , S., S ILLER , A. F., J OHNSON , J. J., S ABHARWAL , A., AND
+DESALVO , D. J. Hypoglycemia risk with physical activity in type 1 diabetes: a data-driven
+approach. Frontiers in Digital Health 5 (2023), 1142021.
+[88] PRIOLEAU , T., B ARTOLOME , A., C OMI, R., AND STANGER , C. DiaTrend - a dataset from
+advanced diabetes technology. https://doi.org/10.7303/syn38187184 , 2023.
+[89] PRIOLEAU , T., B ARTOLOME , A., C OMI, R., AND STANGER , C. Diatrend: A dataset from
+advanced diabetes technology to enable development of novel analytic solutions. Scientific
+Data 10 , 1 (2023), 556.
+[90] RAJAGOPAL , S., AND THANGARASU , N. A novel hybrid deep learning model for blood
+glucose prediction with extended prediction horizons in type-1 diabetic patients. In 2023
+International Conference on Emerging Research in Computational Science (ICERCS) (2023),
+IEEE, pp. 1–7.
+15[91] RAJPURKAR , P., C HEN, E., B ANERJEE , O., AND TOPOL , E. J. Ai in health and medicine.
+Nature medicine 28 , 1 (2022), 31–38.
+[92] REZA, M. S., A MIN, R., Y ASMIN , R., K ULSUM , W., AND RUHI, S.Improving diabetes
+disease patients classification using stacking ensemble method with pima and local healthcare
+data. Heliyon 10 , 2 (2024).
+[93] RIDDELL , M. C., G AL, R. L., B ERGFORD , S., P ATTON , S. R., C LEMENTS , M. A.,
+CALHOUN , P., B EAULIEU , L. C., AND SHERR , J. L. The acute effects of real-world physical
+activity on glycemia in adolescents with type 1 diabetes: The type 1 diabetes exercise initiative
+pediatric (t1dexip) study. Diabetes Care 47 , 1 (2024), 132–139.
+[94] RIDDELL , M. C., L I, Z., G AL, R. L., C ALHOUN , P., J ACOBS , P. G., C LEMENTS , M. A.,
+MARTIN , C. K., D OYLE III, F. J., P ATTON , S. R., C ASTLE , J. R., ET AL .Examining the
+acute glycemic effects of different types of structured exercise sessions in type 1 diabetes in
+a real-world setting: the type 1 diabetes and exercise initiative (t1dexi). Diabetes care 46 , 4
+(2023), 704–713.
+[95] RODRIGUEZ -LEON, C., A VILES -PEREZ , M. D., B ANOS , O., Q UESADA -CHARNECO ,
+M., L OPEZ -IBARRA LOZANO , P. J., V ILLALONGA , C., AND MUNOZ -TORRES , M.
+T1diabetesgranada: a longitudinal multi-modal dataset of type 1 diabetes mellitus. Scientific
+Data 10 , 1 (2023), 916.
+[96] RODRIGUEZ -LEON, C., A VILES -PEREZ , M. D., B ANOS , O., Q UESADA -CHARNECO ,
+M., L OPEZ -IBARRA LOZANO , P. J., V ILLALONGA , C., AND MUNOZ -TORRES , M.
+T1DiabetesGranada: A longitudinal multi-modal dataset of type 1 diabetes mellitus. https:
+//doi.org/10.5281/zenodo.10050943 , 2023.
+[97] RODRIGUEZ -LEÓN, C., V ILLALONGA , C., M UNOZ -TORRES , M., R UIZ, J. R., AND BANOS ,
+O.Mobile and wearable technology for the monitoring of diabetes-related parameters: Sys-
+tematic review. JMIR mHealth and uHealth 9 , 6 (2021), e25138.
+[98] SAGE BIONETWORKS . Synapse: Explore the data behind the next cure. https://www.
+synapse.org/ .
+[99] SCHRAM , M. T., S EP, S. J., V ANDERKALLEN , C. J., D AGNELIE , P. C., K OSTER , A.,
+SCHAPER , N., H ENRY , R. M., AND STEHOUWER , C. D. The maastricht study: an extensive
+phenotyping study on determinants of type 2 diabetes, its complications and its comorbidities.
+European journal of epidemiology 29 (2014), 439–451.
+[100] SHAHID , A., AND LEWIS , D. M. Large-scale data analysis for glucose variability outcomes
+with open-source automated insulin delivery systems. Nutrients 14 , 9 (2022), 1906.
+[101] SHAMS , M. Y., T AREK , Z., AND ELSHEWEY , A. M. A novel rfe-gru model for diabetes
+classification using pima indian dataset. Scientific Reports 15 , 1 (2025), 982.
+[102] SHENG , B., P USHPANATHAN , K., G UAN, Z., L IM, Q. H., L IM, Z. W., Y EW, S. M. E., G OH,
+J. H. L., B EE, Y. M., S ABANAYAGAM , C., S EVDALIS , N., ET AL .Artificial intelligence
+for diabetes care: current and future prospects. The Lancet Diabetes & Endocrinology 12 , 8
+(2024), 569–595.
+[103] SLATTERY , D., AND CHOUDHARY , P.Clinical use of continuous glucose monitoring in adults
+with type 1 diabetes. Diabetes technology & therapeutics 19 , S2 (2017), S–55.
+[104] TAUSCHMANN , M., AND HOVORKA , R. Technology in the management of type 1 diabetes
+mellitus—current status and future prospects. Nature Reviews Endocrinology 14 , 8 (2018),
+464–475.
+[105] T IDEPOOL . Tidepool big data donation project. https://www.tidepool.org/bigdata .
+[106] VANDOORN , W. P., F OREMAN , Y. D., S CHAPER , N. C., S AVELBERG , H. H., K OSTER , A.,
+VAN DER KALLEN , C. J., W ESSELIUS , A., S CHRAM , M. T., H ENRY , R. M., D AGNELIE ,
+P. C., ET AL .Machine learning-based glucose prediction with use of continuous glucose and
+physical activity monitoring data: The maastricht study. PloS one 16 , 6 (2021), e0253125.
+16[107] VHADURI , S., AND PRIOLEAU , T.Adherence to personal health devices: A case study in
+diabetes management. In Proceedings of the 14th EAI International Conference on Pervasive
+Computing Technologies for Healthcare (2020), pp. 62–72.
+[108] VISENTIN , R., C AMPOS -NÁÑEZ , E., S CHIAVON , M., L V, D., V ETTORETTI , M., B RETON ,
+M., K OVATCHEV , B. P., D ALLA MAN, C., AND COBELLI , C.The uva/padova type 1 diabetes
+simulator goes from single meal to single day. Journal of diabetes science and technology 12 ,
+2 (2018), 273–281.
+[109] V IVLI INC. Vivli: A global clinical research data sharing platform. https://vivli.org/ .
+[110] WANG , W. K., C HEN, I., H ERSHKOVICH , L., Y ANG , J., S HETTY , A., S INGH , G., J IANG ,
+Y., K OTLA , A., S HANG , J. Z., Y ERRABELLI , R., ET AL .A systematic review of time series
+classification techniques used in biomedical applications. Sensors 22 , 20 (2022), 8016.
+[111] WARING , J., L INDVALL , C., AND UMETON , R. Automated machine learning: Review of the
+state-of-the-art and opportunities for healthcare. Artificial intelligence in medicine 104 (2020),
+101822.
+[112] WILKINSON , M. D., D UMONTIER , M., A ALBERSBERG , I. J., A PPLETON , G., A XTON , M.,
+BAAK , A., B LOMBERG , N., B OITEN , J.-W., DASILVA SANTOS , L. B., B OURNE , P. E.,
+ET AL .The fair guiding principles for scientific data management and stewardship. Scientific
+data 3 , 1 (2016), 1–9.
+[113] WOLDAREGAY , A. Z., Å RSAND , E., W ALDERHAUG , S., A LBERS , D., M AMYKINA , L.,
+BOTSIS , T., AND HARTVIGSEN , G. Data-driven modeling and prediction of blood glucose
+dynamics: Machine learning applications in type 1 diabetes. Artificial intelligence in medicine
+98(2019), 109–134.
+[114] XIE, J., AND WANG , Q. Benchmarking machine learning algorithms on blood glucose pre-
+diction for type i diabetes in comparison with classical time-series models. IEEE Transactions
+on Biomedical Engineering 67 , 11 (2020), 3101–3124.
+[115] XIONG , X., Y ANG , X., C AI, Y., X UE, Y., H E, J., AND SU, H. Exploring the potential of
+deep learning models integrating transformer and lstm in predicting blood glucose levels for
+t1d patients. Digital Health 11 (2025), 20552076251328980.
+[116] YABO, M. M., G ARKO , A. B., M USLIM , A. A., AND SURU, H. U. A review of diabetes
+datasets. Journal of Computer Sciences and Applications 10 , 1 (2022), 6–15.
+[117] YANG , G., L IU, S., L I, Y., AND HE, L. Short-term prediction method of blood glucose
+based on temporal multi-head attention mechanism for diabetic patients. Biomedical Signal
+Processing and Control 82 (2023), 104552.
+[118] ZHANG , K., K AN, C., H AN, F., Z HANG , J., D ING, C., G UO, Z., H UANG , N., Z HANG , Y.,
+HOU, N., AND SUN, X. Global, regional, and national epidemiology of diabetes in children
+from 1990 to 2019. JAMA pediatrics 177 , 8 (2023), 837–846.
+[119] ZHAO, Q., Z HU, J., S HEN, X., L IN, C., Z HANG , Y., L IANG , Y., C AO, B., L I, J., L IU, X.,
+RAO, W., ET AL .Chinese diabetes datasets for data-driven machine learning. Scientific Data
+10, 1 (2023), 35.
+[120] ZHAO, Q., Z HU, J., W ANG , C., AND RAO, W. Diabetes Datasets, ShanghaiT1DM and
+ShanghaiT2DM. https://doi.org/10.6084/m9.figshare.c.6310860 , 2023.
+[121] ZHU, T., K UANG , L., D ANIELS , J., H ERRERO , P., L I, K., AND GEORGIOU , P.Iomt-enabled
+real-time blood glucose prediction with deep learning and edge computing. IEEE Internet of
+Things Journal 10 , 5 (2022), 3706–3719.
+[122] ZHU, T., L I, K., H ERRERO , P., C HEN, J., AND GEORGIOU , P.A deep learning algorithm
+for personalized blood glucose prediction. In KDH@ IJCAI (2018), pp. 64–78.
+[123] ZHU, T., L I, K., H ERRERO , P., AND GEORGIOU , P.Personalized blood glucose prediction
+for type 1 diabetes using evidential deep learning and meta-learning. IEEE Transactions on
+Biomedical Engineering 70 , 1 (2022), 193–204.
+177 Technical Appendices and Supplementary Material
+Table 3: Overview of the population, demographics and hemoglobin A1C for diabetes datasets within
+the Glucose-ML collection.
+Publicly available
+Diabetes DatasetsGender Age (years) Hemoglobin A1C (%)2
+Population Participants M / F Mean (SD) Range Mean (SD) Range
+OhioT1DM T1D 12 7 / 5 NR 20–80 NR NR
+T1DEXI T1D 497 134 / 363 36.7 (14.0) 18–70 6.6 (0.8) 4.8–10.0
+BIG IDEAs PreD & ND 16 7 / 9 NR 35–65 5.7 (0.3) 5.3–6.4
+DiaTrend T1D 54 17 / 37 32.1 (15.0)119–70 7.8 (0.8) 6.3–10.0
+ShanghaiT1DM T1D 16 5 / 7 57.8 (11.1) 37–73 8.2 (3.4) 4.9–15.1
+ShanghaiT2DM T2D 100 56 / 44 60.2 (13.7) 22–97 6.9 (2.5) 2.1–13.3
+T1DiabetesGranada T1D 736 363 / 373 43.6 (16.1) 14–85 8.3 (1.8) 4.0–18.0
+AI-READI T2D & PreD / ND 703 / 364 462 / 605 60.3 (11.1) 40–87 NR NR
+UCHTT1DM T1D / ND 9 / 11 10 / 10 27.2 (4.0) NR NR 4.4–8.2
+CGMacros T2D / PreD / ND 14 / 16 / 15 16 / 29 48.1 (12.7) 18–69 6.1 (0.9) 4.6–8.5
+1Seventeen participants in DiaTrend reported their age within a range; midpoint values in the age range were
+used to calculate summary statistics.
+2For participants with multiple HbA1c records in ShanghaiT1DM, ShanghaiT2DM, and T1DiabetesGranada,
+only the first HbA1C measurement was used to obtain summary statistics.
+Table 4: Overview of glycemic control across diabetes datasets within the Glucose-ML collection.
+Publicly available
+Diabetes DatasetsTIR per Day (%) Avg Glucose per Day (mg/dL) Glycemic Variability per Day (%)
+Mean (SD) Range Mean (SD) Range Mean (SD) Range
+OhioT1DM 63.2 (20.7) 0–100 160.1 (31.1) 99.4–277.6 31.5 (8.5) 11.7–57.2
+T1DEXI 74.7 (20.0) 0–100 146.1 (32.1) 66.4–365.9 29.2 (8.4) 6.6–80.0
+BIG IDEAs 97.7 (3.8) 79.1–100 114.1 (11.6) 86.2–135.5 16.5 (5.2) 5.3–37.8
+DiaTrend 50.7 (22.4) 0–100 186.5 (41.2) 70.3–397.2 32.0 (8.7) 3.2–91.3
+ShanghaiT1DM 53.4 (22.6) 0–100 165.0 (42.9) 57.2–257.1 33.3 (10.4) 12.9–78.3
+ShanghaiT2DM 79.2 (21.9) 0–100 139.9 (33.9) 40.6–285.9 24.7 (7.8) 6.4–55.8
+T1DiabetesGranada 59.9 (23.6) 0–100 164.1 (42.1) 48.9–493.7 32.7 (10.0) 3.3–101.1
+AI-READI 85.7 (23.6) 0–100 139.0 (39.7) 47.5–395.3 17.7 (6.3) 1.3–60.1
+UCHTT1DM 86.5 (16.7) 26.8–100 110.6 (30.8) 71.3–200.8 21.2 (11.6) 6.6–62.6
+CGMacros 85.3 (20.9) 0–100 141.1 (29.4) 88.6–257.1 18.7 (6.4) 7.1–42.3
+Table 5: Total glucose samples before and after data cleaning.
+Publicly available
+Diabetes DatasetsTotal Glucose Samples
+Before Data Cleaning Excluded w/ Data Cleaning After Data Cleaning
+OhioT1DM 166,533 3 166,530
+T1DEXI 3,785,253 6,728 3,778,525
+BIG IDEAs 36,898 0 36,898
+DiaTrend 7,680,740 115,026 7,565,714
+ShanghaiT1DM 15,695 0 15,695
+ShanghaiT2DM 112,475 13 112,462
+T1DiabetesGranada 22,671,708 62,956 22,608,752
+AI-READI 2,880,509 20,159 2,860,350
+UCHTT1DM 29,174 0 29,174
+CGMacros 629,825 0 629,825
+18Table 6: The 30-minutes blood glucose prediction RMSE using two naïve baselines. This table shows
+the mean RMSE (std) for predicting all glucose values within each dataset (i.e., overall) and when the
+ground-truth glucose values is within 3 clinically-relevant ranges: 1) TBR (BG < 70 mg/dL), 2) TIR
+(70 < BG < 180mg/dL), and 3) TAR (BG > 180 mg/dL). Lower RMSE means less prediction error.
+Mean RMSE (std) mg/dL
+Publicly Available
+Diabetes DatasetsZero-order Hold Simple Linear Regression
+OhioT1DM Overall 23.27 (2.92) 28.08 (4.80)
+<70 mg/dL 16.95 (3.67) 19.88 (6.92)
+70 - 180 mg/dL 21.14 (2.75) 25.38 (4.61)
+>180 mg/dL 27.58 (4.89) 32.69 (8.31)
+T1DEXI Overall 24.03 (5.38) 29.80 (6.28)
+<70 mg/dL 29.04 (9.79) 30.99 (11.29)
+70 - 180 mg/dL 22.17 (4.71) 28.37 (5.80)
+>180 mg/dL 30.60 (6.73) 35.05 (7.81)
+BIG IDEAs Overall 16.11 (2.72) 23.86 (3.91)
+<70 mg/dL 27.30 (14.24) 45.07 (29.46)
+70 - 180 mg/dL 15.20 (2.16) 23.17 (3.86)
+>180 mg/dL 43.74 (7.33) 43.53 (15.51)
+DiaTrend Overall 28.14 (4.96) 35.00 (5.29)
+<70 mg/dL 30.73 (8.81) 33.45 (9.49)
+70 - 180 mg/dL 24.99 (4.38) 31.76 (5.13)
+>180 mg/dL 31.82 (5.27) 38.86 (5.49)
+ShanghaiT1DM Overall 20.58 (3.39) 21.70 (3.20)
+<70 mg/dL 14.78 (10.32) 14.65 (5.96)
+70 - 180 mg/dL 19.06 (4.90) 19.79 (4.34)
+>180 mg/dL 24.10 (4.05) 24.92 (4.44)
+ShanghaiT2DM Overall 17.51 (4.04) 19.82 (4.48)
+<70 mg/dL 13.85 (7.11) 15.34 (8.21)
+70 - 180 mg/dL 15.05 (3.46) 17.44 (4.43)
+>180 mg/dL 28.39 (9.20) 31.00 (9.97)
+T1DiabetesGranada Overall 24.81 (5.17) 28.08 (5.70)
+<70 mg/dL 19.30 (7.32) 22.24 (8.39)
+70 - 180 mg/dL 23.14 (5.15) 26.82 (6.04)
+>180 mg/dL 28.81 (5.55) 31.45 (5.99)
+AI-READI Overall 19.16 (4.96) 30.67 (7.06)
+<70 mg/dL 33.86 (19.62) 42.96 (25.08)
+70 - 180 mg/dL 17.34 (6.45) 28.85 (8.16)
+>180 mg/dL 40.41 (15.76) 47.80 (17.17)
+UCHTT1DM Overall 19.28 (7.10) 30.41 (4.00)
+<70 mg/dL 21.90 (6.35) 28.33 (8.37)
+70 - 180 mg/dL 18.20 (6.27) 29.63 (4.03)
+>180 mg/dL 31.56 (9.21) 37.80 (6.71)
+CGMacros_Dexcom Overall 19.90 (4.68) 30.59 (5.64)
+<70 mg/dL 33.75 (18.90) 45.66 (24.76)
+70 - 180 mg/dL 16.88 (2.60) 27.68 (5.13)
+>180 mg/dL 41.75 (11.90) 48.81 (12.87)
+19

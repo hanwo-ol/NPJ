@@ -1,0 +1,16 @@
+# 실험 결과 요약 (Tier 2.5_v2 Phase Encodings)
+
+| Dataset         |   Windows |   Feature_Dim |   DT_RMSE |   RF_RMSE |   RF_MAE |   RF_MAPE% | Top_5_Important_Features                                                                                                        |
+|:----------------|----------:|--------------:|----------:|----------:|---------:|-----------:|:--------------------------------------------------------------------------------------------------------------------------------|
+| AIDET1D         |    471528 |            20 |     24.4  |     22.58 |    15.86 |       11.9 | glucose_value_mg_dl_t-0 (93.1%), Velocity (3.5%), SD1 (0.5%), glucose_value_mg_dl_t-5 (0.5%), Window_Std (0.4%)                 |
+| BIGIDEAs        |     36409 |            92 |     15.44 |     14.11 |     9.23 |        7.7 | glucose_value_mg_dl_t-0 (74.3%), Velocity (6.0%), Acceleration (4.4%), calorie_time_since_t-0 (2.1%), tod_cos (1.6%)            |
+| Bris-T1D_Open   |    818600 |           236 |     29.23 |     27.57 |    19.45 |       13.5 | glucose_value_mg_dl_t-0 (86.1%), Velocity (6.8%), SD1 (1.3%), Window_Std (0.9%), tod_sin (0.6%)                                 |
+| CGMacros_Dexcom |    415299 |           398 |      5.63 |      3.22 |     2.06 |        1.5 | glucose_value_mg_dl_t-0 (98.7%), Velocity (1.1%), Libre GL_t-0 (0.0%), SD1 (0.0%), tod_sin (0.0%)                               |
+| CGMacros_Libre  |    455705 |           398 |      4.06 |      1.27 |     0.7  |        0.7 | glucose_value_mg_dl_t-0 (99.3%), Velocity (0.7%), Window_Std (0.0%), glucose_value_mg_dl_t-1 (0.0%), Dexcom GL_decay_t-5 (0.0%) |
+| CGMND           |    114409 |            20 |     14.64 |     14.02 |     9.54 |        9.2 | glucose_value_mg_dl_t-0 (61.1%), Window_Mean (13.4%), glucose_value_mg_dl_t-5 (4.8%), tod_cos (3.7%), Velocity (2.6%)           |
+| GLAM            |  26165917 |            38 |     14.08 |     13.59 |     9.8  |       10.1 | glucose_value_mg_dl_t-0 (81.5%), Acceleration (2.3%), SD1 (2.0%), glucose_value_mg_dl_t-5 (1.9%), Window_Std (1.9%)             |
+| HUPA-UCM        |    309092 |           200 |     17.63 |     15.02 |    10.19 |        8.2 | glucose_value_mg_dl_t-0 (91.6%), Velocity (5.2%), SD1 (0.2%), tod_cos (0.1%), Window_Std (0.1%)                                 |
+| IOBP2           |  14027905 |            74 |     27.32 |     24.95 |    17.59 |       11.8 | glucose_value_mg_dl_t-0 (91.6%), Velocity (4.9%), SD1 (0.5%), Window_Std (0.4%), glucose_value_mg_dl_t-5 (0.4%)                 |
+| Park_2025       |     23064 |            38 |     20.26 |     20.32 |    15.47 |       16.5 | Window_Mean (72.4%), Window_AUC (9.5%), HBGI (4.4%), glucose_value_mg_dl_t-5 (1.0%), glucose_value_mg_dl_t-4 (0.9%)             |
+| PEDAP           |   7055811 |            56 |     30.83 |     28.59 |    20.46 |       14.9 | glucose_value_mg_dl_t-0 (86.7%), Velocity (7.2%), SD1 (0.6%), Window_Std (0.5%), tod_cos (0.5%)                                 |
+| UCHTT1DM        |     27220 |            38 |     18.82 |     17.84 |    12.05 |       11.8 | glucose_value_mg_dl_t-0 (92.6%), Velocity (2.1%), Acceleration (0.7%), Window_Std (0.7%), tod_sin (0.4%)                        |
