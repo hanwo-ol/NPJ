@@ -70,6 +70,16 @@ def process_dataset(project_name, dataset_mappings, glucose_ml_dir):
             try:
                 sep = '|' if str(event_file).endswith('.txt') else ','
                 edf = pd.read_csv(event_file, sep=sep, low_memory=False)
+                
+                # --- IOBP2 MealDose Custom Time Construction ---
+                if 'IOBP2MealDose' in event_file.name:
+                    edf['MealDoseHr'] = edf['MealDoseHr'].fillna(0).astype(int).astype(str).str.zfill(2)
+                    edf['MealDoseMin'] = edf['MealDoseMin'].fillna(0).astype(int).astype(str).str.zfill(2)
+                    # For AmPm: AM = 0, PM = 1 (or string) -> just assume base format if naive, or standard parse
+                    # A robust but simple parse: just use Date if time is too complex, but let's try direct concat
+                    time_str = edf['MealDoseHr'] + ':' + edf['MealDoseMin']
+                    edf['DeviceDtTm'] = pd.to_datetime(edf['MealDoseDt'] + ' ' + time_str, errors='coerce')
+                    
                 loaded_mappings.append({'map_dict': map_dict, 'edf': edf, 'is_dir': False})
             except Exception as e:
                 print(f"Error reading {event_file.name}: {e}")
@@ -116,8 +126,12 @@ def process_dataset(project_name, dataset_mappings, glucose_ml_dir):
             event_time_col = map_dict['time_col']
             if event_time_col not in subject_edf.columns: continue
             
-            # Select only target columns to avoid merge bloat
-            target_cols = [event_time_col] + map_dict['cols']
+            if len(map_dict['cols']) == 0:
+                # If no columns specified, it means the occurrence of the timestamp itself is the event
+                subject_edf['EventMarker'] = 1.0
+                target_cols = [event_time_col, 'EventMarker']
+            else:
+                target_cols = [event_time_col] + map_dict['cols']
             
             # Ensure target cols actually exist
             available_cols = [c for c in target_cols if c in subject_edf.columns]
@@ -139,11 +153,8 @@ def main():
     
     # We define configurations based on the Candidates we investigated
     configs = {
-        'CGMND': [
-            {'type': 'state', 'file': raw_base / "CGMND_Data_Tables/CGMNDSleepWakeLog.txt", 'id_col': 'DeidentID', 'time_col': 'Sleep_Time_Tm', 'cols': ['Wake_Time', 'Nap_SleepTime', 'Nap_WakeTime']}
-        ],
         'AIDET1D': [
-            {'type': 'state', 'file': raw_base / "AIDET1D_Data_Tables/AIDEInsulin.txt", 'id_col': 'PtID', 'time_col': 'InsTypeStartDt', 'cols': ['InsulinName', 'InsRoute', 'InsInjectionFreq']}
+            {'type': 'state', 'file': raw_base / "AIDET1D_Data_Tables/AIDEInsulin.txt", 'id_col': 'PtID', 'time_col': 'InsTypeStartDt', 'cols': ['InsInjectionFreqInt', 'InsRoute']}
         ],
         'GLAM': [
             {'type': 'discrete', 'file': raw_base / "GLAM_Data_Tables/GLAMMealLog.txt", 'id_col': 'PtID', 'time_col': 'MealDateTime', 'cols': []},
@@ -156,14 +167,14 @@ def main():
         ],
         'IOBP2': [
             {'type': 'state', 'file': raw_base / "IOBP2_Data_Tables/IOBP2BasalRtChg.txt", 'id_col': 'PtID', 'time_col': 'DeviceDtTm', 'cols': ['BasalRate']},
-            {'type': 'discrete', 'file': raw_base / "IOBP2_Data_Tables/IOBP2MealDose.txt", 'id_col': 'PtID', 'time_col': 'DeviceDtTm', 'cols': ['MealSize']}
+            {'type': 'discrete', 'file': raw_base / "IOBP2_Data_Tables/IOBP2MealDose.txt", 'id_col': 'PtID', 'time_col': 'DeviceDtTm', 'cols': ['MealDoseAnnounceAmt']}
         ],
         'BIGIDEAs': [
             {'type': 'discrete', 'file': glucose_ml_dir / "3_Glucose-ML-collection/BIGIDEAs/BIGIDEAs-extended-features", 'suffix': '_Food.csv', 'time_col': 'time_begin', 'cols': ['calorie', 'carbohydrate', 'protein', 'fat']},
             {'type': 'state', 'file': glucose_ml_dir / "3_Glucose-ML-collection/BIGIDEAs/BIGIDEAs-extended-features", 'suffix': '_HR.csv', 'time_col': 'datetime', 'cols': ['hr']}
         ],
         'UCHTT1DM': [
-            {'type': 'discrete', 'file': glucose_ml_dir / "3_Glucose-ML-collection/UCHTT1DM/UCHTT1DM-extended-features", 'suffix': '_Carbohidrates.csv', 'time_col': 'Unnamed: 0', 'cols': ['CHO']},
+            {'type': 'discrete', 'file': glucose_ml_dir / "3_Glucose-ML-collection/UCHTT1DM/UCHTT1DM-extended-features", 'suffix': '_Carbohidrates.csv', 'time_col': 'Unnamed: 0', 'cols': ['Value (g)']},
             {'type': 'discrete', 'file': glucose_ml_dir / "3_Glucose-ML-collection/UCHTT1DM/UCHTT1DM-extended-features", 'suffix': '_Insulin.csv', 'time_col': 'Unnamed: 0', 'cols': ['Dose (U)']},
             {'type': 'state', 'file': glucose_ml_dir / "3_Glucose-ML-collection/UCHTT1DM/UCHTT1DM-extended-features", 'suffix': '_Heart_Rate.csv', 'time_col': 'Unnamed: 0', 'cols': ['Value']}
         ]

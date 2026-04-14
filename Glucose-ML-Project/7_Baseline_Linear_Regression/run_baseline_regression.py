@@ -26,7 +26,7 @@ def get_numeric_cols(p_files, sample_n=10):
     """Sample a handful of patient files and build the union of numeric-coercible columns."""
     numeric_cols = set()
     for pf in p_files[:sample_n]:
-        hdr = pd.read_csv(pf, nrows=3)
+        hdr = pd.read_csv(pf, low_memory=False)
         for c in hdr.columns:
             if pd.to_numeric(hdr[c], errors='coerce').notna().any():
                 numeric_cols.add(c)
