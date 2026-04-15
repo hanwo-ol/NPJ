@@ -70,6 +70,18 @@ X_test  = np.vstack([x for x, _ in test_list])
 
 > **load_dataset()의 현재 80/20 분할도 동일한 원칙이 적용되어 있음** — 환자 파일별로 80%/20% 분할 후 합산하는 구조이므로 호환됨. `02_optuna_hpo.py`에서는 이를 70/15/15로 확장하면 된다.
 
+#### ⚠️ 대형 데이터셋 vstack 메모리 스파이크 방지
+
+`np.vstack(train_list)` 연산은 기존 리스트와 병합된 배열이 동시에 RAM에 상주하여 **순간적으로 2배의 메모리를 요구**한다. GLAM(2,600만 × 38차원 × float32 ≈ 3.7GB)에서는 vstack 시점에 약 7.4GB 스파이크 발생 가능.
+
+**대비책 — 병합 즉시 원본 리스트 해제:**
+```python
+X_train = np.vstack([x for x, _ in train_list])
+del train_list   # 원본 리스트 즉시 해제
+gc.collect()     # GC 강제 실행으로 메모리 즉시 반환
+```
+> `val_list`, `test_list`도 동일하게 처리. 각 세트를 순차적으로 구성하고 즉시 해제하는 패턴을 `02_optuna_hpo.py` 전체에서 일관되게 적용한다.
+
 ---
 
 ## 3. 학습 환경 통제 및 자원 분배 (Resource Allocation)
@@ -106,12 +118,25 @@ model.fit(X_train, y_train,
           callbacks=callbacks)
 ```
 
-**CatBoost:** `early_stopping_rounds` + Optuna의 `MedianPruner` 조합 (CatBoost는 Optuna 전용 통합 콜백 미제공 — trial 단위 pruning)
+**CatBoost:** `optuna.integration.CatBoostPruningCallback` 공식 지원 (`optuna-integration` v4.8 기준). 단, 해당 패키지는 `optuna-integration[catboost]` 설치 시 C 컴파일러가 필요하여 **현재 Windows 환경에서 설치 불가**. 대신 CatBoost의 네이티브 커스텀 콜백(`TrainingCallback`)을 구현하여 동일한 round-level pruning 효과를 달성한다.
 
 ```python
-# CatBoost Pruning 방식
-pruner = optuna.pruners.MedianPruner(n_startup_trials=5, n_warmup_steps=0)
+# CatBoost 네이티브 커스텀 Pruning 콜백 구현
+class OptunaCatBoostCallback:
+    """라운드마다 val RMSE를 trial에 보고 → 가망 없으면 조기 종료."""
+    def __init__(self, trial):
+        self.trial = trial
+
+    def after_iteration(self, info):
+        iteration = info.iteration
+        val_rmse = info.metrics['learn']['RMSE'][-1]  # or 'validation'
+        self.trial.report(val_rmse, step=iteration)
+        if self.trial.should_prune():
+            raise optuna.TrialPruned()
+        return True  # False 반환 시 학습 중단
 ```
+
+> `study`에는 `MedianPruner(n_startup_trials=5, n_warmup_steps=20)`을 설정하여, 초기 5개 trial이 완료되고 20 round 이후부터 pruning이 활성화되도록 한다.
 
 ### 3.3 전체 타임아웃 안전장치
 
@@ -312,3 +337,4 @@ sampler = optuna.samplers.TPESampler(
 | v1 | 2026-04-15 | 초안 작성 (Co-worker 초안) |
 | v2 | 2026-04-15 | ① Multi-objective → Single-objective(RMSE) 전환 ② n_trials 데이터셋 크기별 동적 할당 ③ LightGBM Optuna 전용 Callback 통합 명시 ④ 70/15/15 시계열 검증 분할 추가 ⑤ 구체적 Search Space 정의 ⑥ TPE multivariate sampler 명시 |
 | v3 | 2026-04-15 | ① **Patient-wise split** 구현 방식 명확화 및 전체 병합 후 단순 분할의 위험성 경고 추가 ② **CatBoost depth 동적 제한** — 데이터셋 크기별 max_depth 상한 매핑 테이블 추가(OOM 방지) ③ **최종 평가 전략 설계 결정** — Tier 3: Best Trial 모델 직접 사용 / Tier 4: 85% Retrain + n_estimators×1.15 방침 확정 ④ JSON 스키마에 `retrain_n_estimators` 필드 추가 |
+| v4 | 2026-04-15 | ① **vstack 메모리 스파이크 방지** — `del list + gc.collect()` 즉시 해제 패턴 명시(GLAM 7.4GB 스파이크 방지) ② **CatBoost Pruning 구현 방식 수정** — `optuna-integration[catboost]` Windows C컴파일러 의존성 미충족으로 설치 불가 → CatBoost 네이티브 `TrainingCallback` 기반 커스텀 Pruning 콜백으로 대체 구현 |
