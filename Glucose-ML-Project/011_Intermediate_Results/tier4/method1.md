@@ -10,7 +10,11 @@
 
 ### 1.1 문제 설정
 
-Nalmpatian et al.은 **자국 내 보험포트폴리오 사망률 데이터가 전혀 없는 영국(UK)**을 대상으로, 8개국의 사망률 포트폴리오 데이터로 사전학습된 GBM 모델을 전이(transfer)하여 사망률을 예측하는 프레임워크를 제시한다.
+Nalmpatian et al.은 **자국 내 보험포트폴리오 사망률 데이터가 전혀 없는 영국(UK)**
+을 대상으로, 8개국의 사망률 포트폴리오 데이터로 사전학습된 GBM 모델을 전이(transfer)하여 사망률을 예측하는 프레임워크를 제시한다.
+
+<img width="900" height="396" alt="image" src="https://github.com/user-attachments/assets/98b6e506-a489-45ba-bfda-8a686ffeaaee" />
+
 
 핵심 아이디어:
 1. **Pretrained Global Model:** K개 source countries의 pooled data로 GBM을 사전학습 (global features만 사용)
