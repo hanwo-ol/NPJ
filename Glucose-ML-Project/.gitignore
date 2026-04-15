@@ -59,6 +59,14 @@
 !.gitignore
 !LICENSE
 
+# 011_Intermediate_Results — 분석 결과물 예외 허용
+# (그림, 요약 통계, HPO 결과 JSON 등은 추적 대상)
+!011_Intermediate_Results/
+!011_Intermediate_Results/*.png
+!011_Intermediate_Results/*.csv
+!011_Intermediate_Results/*.json
+
+
 # ==========================================
 # 4. 개발 환경 및 캐시
 # ==========================================

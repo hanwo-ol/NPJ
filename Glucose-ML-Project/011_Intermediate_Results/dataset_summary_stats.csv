@@ -1,0 +1,13 @@
+﻿Dataset,Cohort,Country,N_Subjects,N_Readings,N_Windows,Duration_days_mean,Duration_days_max,Glucose_mean,Glucose_std,Glucose_median,Glucose_min,Glucose_max,TIR_pct,TAR_pct,TBR_pct,Interval_min,Sensor,Covariates
+AIDET1D,T1DM,Turkey,29,484105,471528,123.7,378.3,154.9,64.2,142.0,37.0,401.0,68.7,27.9,3.4,5,Dexcom G5,CGM only
+BIGIDEAs,ND/PreD,USA,16,36898,36409,8.3,9.9,114.5,23.1,111.0,40.0,261.0,97.7,1.8,0.6,5,Dexcom G6,CGM + Nutrition (4종)
+Bris-T1D_Open,T1DM,Australia,20,848574,818600,194.7,225.7,156.2,58.0,144.0,39.6,500.4,70.7,27.5,1.8,5,Libre/Dexcom,CGM + Insulin + Carbs + HR + Steps + Sleep
+CGMacros_Dexcom,ND,USA,30,417561,415299,10.1,19.1,141.5,43.0,131.0,40.0,400.0,84.7,14.9,0.4,5,Dexcom G6,2 CGM sensors + Nutrition (15종) + Activity
+CGMacros_Libre,ND,USA,30,457980,455705,11.0,19.2,110.7,42.4,102.2,40.0,405.0,82.5,6.7,10.8,15,FreeStyle Libre,2 CGM sensors + Nutrition (15종) + Activity
+CGMND,ND,Multiple,45,117130,114409,52.3,238.3,106.4,22.0,103.0,39.0,372.0,98.0,0.8,1.2,5,Various,CGM only
+GLAM,GDM,Spain,886,26590231,26165917,146.4,237.2,100.2,21.4,98.0,39.0,401.0,94.8,0.3,4.9,15,Libre,CGM + Meal event marker
+HUPA-UCM,T1DM/ND,Spain,25,309392,309092,43.0,574.0,141.4,57.1,132.0,40.0,444.0,71.7,21.7,6.6,5,Dexcom,CGM + Insulin + Carbs + HR + Steps
+IOBP2,T1DM,USA,440,14333303,14027905,188.6,1951.9,170.7,68.5,158.0,20.0,600.0,60.8,37.1,2.1,5,Dexcom,CGM + Bolus insulin
+Park_2025,ND,Korea,38,23520,23064,0.0,0.0,112.6,32.7,105.7,43.4,309.2,92.2,4.2,3.6,5,Dexcom G7,CGM + Carbs
+PEDAP,T1DM,USA,103,7232481,7055811,286.5,481.0,158.2,65.5,143.0,39.0,401.0,67.4,29.8,2.8,5,Dexcom,CGM + Basal + Bolus + Carbs
+UCHTT1DM,T1DM,USA,20,29174,27220,5.4,6.8,110.8,45.4,94.0,40.0,400.0,85.5,8.6,5.9,5,Dexcom,CGM + Bolus insulin
