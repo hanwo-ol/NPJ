@@ -1,38 +1,66 @@
 # ==========================================
-# 1. 대용량 데이터 파일 전역 차단 (Data Files)
+# 1. 원본 데이터셋 폴더 전체 차단 (Raw Datasets - 절대 커밋 금지)
 # ==========================================
-*.csv
-*.xlsx
-*.xls
+001_Auto-scripts/Original-Glucose-ML-datasets/
+003_Glucose-ML-collection/
+
+# ==========================================
+# 2. 대용량 바이너리 및 데이터 파일 전역 차단
+# ==========================================
+# 이미지/사진 (CGMacros 식사 사진 등)
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+*.webp
+*.tiff
+*.svg
+
+# 압축파일
 *.zip
 *.tar
 *.gz
+*.7z
+*.rar
+
+# 대용량 데이터 파일
+*.csv
+*.xlsx
+*.xls
 *.json
 *.xml
-*.txt
 *.h5
 *.hdf5
 *.pkl
 *.parquet
+*.db
+*.sqlite
+*.npy
+*.npz
 
-# (예외) 코드 구동에 필수적인 텍스트 설정파일들은 업로드 허용
+# 문서/바이너리
+*.pdf
+*.docx
+*.pptx
+
+# 텍스트 데이터 (AIDET1D 등 .txt 원본 테이블)
+*.txt
+
+# ==========================================
+# 3. 예외: 반드시 추적해야 하는 파일들 (화이트리스트)
+# ==========================================
 !requirements.txt
-!README.md
-!README.txt
-!LICENSE.txt
+!dependencies.txt
+!*.md
 !*.py
 !*.sh
-!*.md
+!*.ps1
+!.gitignore
+!LICENSE
 
 # ==========================================
-# 2. 특정 데이터 전용 폴더 차단 (선택 사항)
-# 단, 폴더 내부의 코드는 살리고 싶다면 폴더 전체를 무시하기보단 위 1번 규칙으로 충분합니다.
-# ==========================================
-# 1_Auto-scripts/Original-Glucose-ML-datasets/
-# 3_Glucose-ML-collection/
-
-# ==========================================
-# 3. 개발 환경 및 캐시 타깃 (Environment & Cache)
+# 4. 개발 환경 및 캐시
 # ==========================================
 __pycache__/
 *.py[cod]
@@ -52,3 +80,7 @@ env/
 # OS 자동 생성 파일
 .DS_Store
 Thumbs.db
+
+# 임시 스크립트 / 분석용 파일 (프로젝트 루트)
+pdf_text.txt
+scratch_pdf_reader.py
