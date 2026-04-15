@@ -2,8 +2,7 @@
 
 > **Abbreviations:** N = number of subjects; Readings = total CGM time-points; Windows = 30-min prediction windows (Lookback 6 + Forecast 6 steps); TIR = Time In Range (70–180 mg/dL); TAR = Time Above Range (>180); TBR = Time Below Range (<70).
 
-| Dataset         | Cohort   | Country   |   N | Readings   | Windows   |      Duration | Sensor          | Interval   | Mean G     |   TIR (%) |   TAR (%) |   TBR (%) |
-|                 |          |           |     |            |           |   (days, max) |                 |            | (mg/dL)    |           |           |           |
+| Dataset         | Cohort   | Country   |   N | Readings   | Windows   |      Duration (days, max)| Sensor          | Interval   | Mean G   (mg/dL)  |   TIR (%) |   TAR (%) |   TBR (%) |
 |:----------------|:---------|:----------|----:|:-----------|:----------|--------------:|:----------------|:-----------|:-----------|----------:|----------:|----------:|
 | IOBP2           | T1DM     | USA       | 440 | 14.33M     | 14.0M     |        1951.9 | Dexcom          | 5 min      | 170.7±68.5 |      60.8 |      37.1 |       2.1 |
 | PEDAP           | T1DM     | USA       | 103 | 7.23M      | 7.1M      |         481   | Dexcom          | 5 min      | 158.2±65.5 |      67.4 |      29.8 |       2.8 |
