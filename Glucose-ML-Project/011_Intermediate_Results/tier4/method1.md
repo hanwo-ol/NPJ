@@ -421,17 +421,45 @@ def generate_synthetic(target_M, source_datasets, similarity_scores, total_windo
 
 ### 7.1 방법론적 한계
 
-1. **합성 데이터의 본질적 제약:** 노이즈 주입된 합성 데이터는 실제 target 데이터의 분포를 완벽히 모사할 수 없다. 특히 CGM 데이터의 **시간적 자기상관 구조**는 독립 resampling으로 보존되지 않는다. 논문의 사망률 데이터는 집계(aggregated) 데이터여서 이 문제가 경미했지만, 우리의 시계열 윈도우 데이터에서는 더 심각할 수 있다.
+> [!CAUTION]
+> **한계 1은 Prioleau et al. (2025)의 벤치마크 가이드라인과 직접 충돌하는 치명적 문제이다.** 논문의 Step 4(합성 데이터 생성)를 CGM 시계열에 그대로 적용할 수 없으며, 대안적 전이 메커니즘이 필수적이다. → **Appendix A/B/C** 참조.
+
+1. **합성 데이터 생성의 시계열 구조 파괴 (치명적):**
+
+   Nalmpatian et al.의 Step 4는 source 데이터셋에서 행(row)을 독립적으로 resampling하고 노이즈를 주입하여 target용 합성 데이터를 생성한다. 이 접근은 **집계된(aggregated) 보험 사망률 데이터**에서는 유효하나, **CGM 시계열 데이터**에서는 다음 이유로 적용 불가능하다:
+
+   - **시간적 자기상관 파괴:** CGM 윈도우는 연속적 시간 의존성을 가진다. 독립 resampling은 환자 내 시간 순서를 해체하여, lag 피처(t-0 ~ t-5), Velocity, Acceleration, Jerk 등 연속 윈도우 차분으로 정의된 파생 피처의 물리적 의미를 파괴한다.
+   - **Data leakage 위험:** 시간 순서가 파괴되면 미래 윈도우가 과거로 혼입될 수 있으며, 이는 Prioleau et al.이 [48]을 인용하여 경고한 "공통적 함정(common pitfalls)"에 해당한다.
+   - **노이즈 주입의 비생물학성:** 혈당값에 가우시안 노이즈를 주입하면 생리학적으로 불가능한 혈당 궤적(예: 30mg/dL→300mg/dL 5분 내 변동)이 생성될 수 있다.
+
+   **Prioleau et al. (2025)의 관련 가이드라인:**
+
+   > *"Informed by best practice guidelines, we excluded periods of missing data from our analysis to **avoid interpolation or extrapolation approaches that can introduce errors** into the prediction model and reported accuracy."* — §5.3, p.7
+   >
+   > *"Models should **not be evaluated on test sets that have been smoothed or that include interpolation of missing data**. These common pitfalls can **lead to invalid estimates of accuracy**."* — §6.1, p.10
+
+   합성 데이터 생성(resampling + noise injection)은 interpolation/extrapolation보다 더 심한 데이터 왜곡이므로, Prioleau et al.의 기준을 명백히 위반한다.
 
 2. **고유 피처 매핑 문제:** CGMacros(영양 데이터 보유) → AIDET1D(영양 데이터 없음)로 전이할 때, specialized model이 영양 피처에 학습한 패턴을 AIDET1D에 적용할 방법이 없다. 논문에서는 합성 데이터에 source의 local features를 그대로 포함시켜 해결하지만, CGM의 경우 "가짜 영양 데이터"를 주입하는 것의 생물학적 타당성이 의문.
 
 3. **규모 불균형:** GLAM(26M) vs UCHTT1DM(27K)는 1000배 차이. 풀링 시 GLAM이 global model을 지배하게 되어, 실질적으로 "GLAM 모델 + 소폭 보정"이 될 가능성.
 
-### 7.2 해결 전략
+### 7.2 해결 전략: 데이터 레벨 전이 → 모델 레벨 전이로 대체
 
-| 한계 | 제안 전략 |
+논문의 핵심 가치(2단계 GBM 구조 + 유사도 가중)를 보존하되, **Step 4(합성 데이터 생성)를 모델 레벨 전이로 대체**하는 3가지 대안을 제시한다. 각 대안의 상세 설계, 구현 코드, Prioleau et al. (2025) 준수 여부 분석은 **Appendix A/B/C**에 기술한다.
+
+| 대안 | 핵심 아이디어 | 시계열 보존 | Prioleau 준수 | 로컬 피처 활용 |
+|:---|:---|:---:|:---:|:---:|
+| **A. Similarity-Weighted Model Fusion** | M의 실제 데이터에 f_G + Σ s_j·f_j 적용 | ✅ 완전 | ✅ | ⚠️ 공통 피처 부분만 |
+| **B. Instance-Weighted Pooled Training** | K개 풀링 학습 시 유사도 비례 가중치 | ✅ 완전 | ✅ | ❌ 공통 피처만 |
+| **C. Patient-Level Transfer** | 환자 전체 시퀀스 단위로 유사도 비례 선택 | ✅ 완전 | ✅ | ✅ 가능 |
+
+> [!IMPORTANT]
+> **대안 C(Patient-Level Transfer)를 주 전략으로 권장한다.** 시계열 구조를 100% 보존하면서, 논문의 유사도 기반 재표집 개념을 환자 단위로 격상시켜 적용할 수 있다. Prioleau et al. (2025)의 모든 가이드라인을 준수한다. 상세 분석은 Appendix C 참조.
+
+| 한계 | 해결 전략 |
 |:---|:---|
-| 시간 자기상관 파괴 | 윈도우 단위 (이미 vectorized된 형태)로 resampling → 시계열 구조는 피처 내부에 인코딩되어 있으므로 부분적으로 보존됨 |
+| 시간 자기상관 파괴 | **Step 4를 폐기**하고 모델 레벨 전이로 대체 (Appendix A/B/C) |
 | 고유 피처 매핑 불가 | Global model 예측만 사용 (f_G only) + Specialized 보정은 동일 피처셋 공유 source만 사용하는 "filtered specialization" 변형 |
 | 규모 불균형 | Global model 학습 시 **데이터셋별 동수 subsampling** (각 데이터셋에서 최대 N_max 윈도우만 추출) |
 
@@ -440,18 +468,289 @@ def generate_synthetic(target_M, source_datasets, similarity_scores, total_windo
 ## 8. 결론: 적합성 종합 판정
 
 > [!IMPORTANT]
-> **결론: 적용 가능하며, 유의미한 연구로 발전할 수 있다.**
+> **결론: 핵심 프레임워크(2단계 GBM + Similarity Index + Drift Analysis)는 적용 가능하며 유의미하다. 단, Step 4(합성 데이터 생성)는 CGM 시계열 특성상 모델 레벨 전이(Appendix C 권장)로 대체해야 한다.**
 
 | 판정 차원 | 등급 | 코멘트 |
 |:---|:---:|:---|
-| 방법론적 적합성 | **A** | GBM 2단계 전이 + Similarity Index는 우리 파이프라인에 직접 매핑 가능 |
+| 방법론적 적합성 | **A-** | 프레임워크 전체는 적합하나 Step 4 수정 필수 → Appendix C로 해결 |
 | 데이터 준비도 | **A** | Tier 2.5의 harmonized features + dataset_summary_stats.csv로 즉시 착수 가능 |
 | 신규성(Novelty) | **A+** | Cross-dataset CGM 전이학습은 매우 드문 연구 주제. Similarity Index + Drift Analysis 조합은 CGM 분야에서 최초 |
 | 실행 가능성 | **B+** | 로컬 환경(32GB RAM, RTX 3060)으로 실행 가능하나, 12 LODO rounds ~12시간 소요 |
 | 임상 시사점 | **A** | "새 병원의 CGM 데이터를 수집하지 않아도 기존 다른 병원 모델로 합리적 예측 가능" → 현실적 가치 높음 |
+| Prioleau 가이드라인 준수 | **A** | Appendix C 채택 시 interpolation/extrapolation/smoothing 금지 원칙 완전 준수 |
 
 이 방법론은 **Tier 4의 첫 번째 실험 축**으로서, Cross-Dataset Transferability의 체계적 벤치마크를 제공하고, 이후의 딥러닝 기반 전이학습(Method 2, 3, ...)과 직접 비교할 수 있는 강력한 baseline이 된다.
 
 ---
 
-*작성일: 2026-04-15 | Glucose-ML-Project Tier 4 Literature Review Series*
+## Appendix A: Similarity-Weighted Model Fusion
+
+### A.1 개요
+
+논문의 Step 1~3은 그대로 유지하되, **Step 4(합성 데이터 생성)를 폐기**하고 Step 5를 수정하여, target M의 **실제 테스트 데이터**에 직접 모델을 적용한다.
+
+### A.2 수정된 알고리즘
+
+```
+Step 1: [동일] Global GBM f_G를 K개 pooled dataset의 공통 피처로 학습
+Step 2: [동일] 각 j ∈ K에 대해 Specialized GBM f_j를 (공통 + 고유) 피처로 학습,
+        f_G 출력을 초기값으로 사용
+Step 3: [동일] 유사도 점수 s_j 계산
+Step 4: [폐기] 합성 데이터 생성하지 않음
+Step 5: [수정] Target M의 실제 테스트 데이터에 직접 예측:
+
+        ŷ_M = f_G(X_M_global) + Σ_j [ s_j · f_j(X_M_global) ]
+
+        → 각 specialized model의 공통 피처 부분만 사용하여 예측,
+          유사도 점수로 가중 합산
+```
+
+### A.3 구현
+
+```python
+import lightgbm as lgb
+import numpy as np
+
+def predict_transfer_A(X_M_global, global_model, specialized_models, similarity_scores):
+    """
+    대안 A: Similarity-Weighted Model Fusion
+    
+    X_M_global: target M의 실제 테스트 데이터 (공통 피처만, N × 20~25 dim)
+    global_model: f_G
+    specialized_models: {j: f_j} for j in K
+    similarity_scores: {j: s_j} for j in K, sum=1
+    """
+    # Global model 예측 (전체 공통 패턴)
+    y_global = global_model.predict(X_M_global)
+    
+    # Specialized models의 가중 합산 (로컬 보정)
+    y_local_sum = np.zeros(len(X_M_global))
+    for j, model_j in specialized_models.items():
+        s_j = similarity_scores[j]
+        # specialized model의 공통 피처 부분만으로 예측
+        # (f_j는 f_G 위에 추가 트리를 쌓은 것이므로, 공통 피처로도 잔차 보정 가능)
+        y_j = model_j.predict(X_M_global) - global_model.predict(X_M_global)
+        y_local_sum += s_j * y_j
+    
+    return y_global + y_local_sum
+```
+
+### A.4 장단점
+
+| 장점 | 단점 |
+|:---|:---|
+| 시계열 구조 100% 보존 — M의 실제 데이터를 그대로 사용 | Specialized model의 로컬 피처(insulin, nutrition 등) 활용 불가 |
+| 구현 단순 — 학습 완료 후 inference만 수행 | f_j가 공통 피처로만 평가되므로 로컬 보정 효과 제한적 |
+| Prioleau 가이드라인 완전 준수 | 유사도 가중치가 모델 예측에만 적용되어, 논문의 데이터 레벨 가중 개념이 약화 |
+
+### A.5 Prioleau et al. (2025) 준수 여부
+
+| 기준 | 준수 | 근거 |
+|:---|:---:|:---|
+| Interpolation/extrapolation 금지 | ✅ | 합성 데이터를 생성하지 않음. M의 실제 데이터만 사용 |
+| Test set smoothing 금지 | ✅ | 테스트 데이터에 어떤 변형도 가하지 않음 |
+| 결측 구간 제외 | ✅ | 기존 전처리 파이프라인의 결측 처리 그대로 유지 |
+
+---
+
+## Appendix B: Instance-Weighted Pooled Training
+
+### B.1 개요
+
+합성 데이터 생성 대신, K개 source 데이터셋을 **유사도 비례 인스턴스 가중치**를 부여하여 하나의 모델로 pooled 학습한다. 유사한 source의 데이터 포인트에 높은 학습 가중치를 부여하여, 논문의 "유사도 비례 재표집" 개념을 **데이터 복제 없이** 동등하게 구현한다.
+
+### B.2 수정된 알고리즘
+
+```
+Step 1-3: [동일]
+Step 4:   [대체] K개 source 데이터셋을 공통 피처로 풀링.
+          각 데이터셋 j의 모든 윈도우에 가중치 w = s_j / N_j 부여.
+          (s_j: 유사도 점수, N_j: 데이터셋 j의 윈도우 수)
+Step 5:   가중 풀링 데이터로 단일 GBM 학습 → M의 실제 테스트에 적용
+```
+
+### B.3 구현
+
+```python
+import lightgbm as lgb
+import numpy as np
+import pandas as pd
+
+def train_transfer_B(source_datasets, similarity_scores, target_M_test):
+    """
+    대안 B: Instance-Weighted Pooled Training
+    """
+    X_all, y_all, w_all = [], [], []
+    
+    for j, ds in source_datasets.items():
+        s_j = similarity_scores[j]
+        N_j = len(ds)
+        weight_j = s_j / N_j  # 유사도 높을수록 + 데이터셋 크기 보정
+        
+        X_all.append(ds[global_features])
+        y_all.append(ds['target'])
+        w_all.append(np.full(N_j, weight_j))
+    
+    X_pool = pd.concat(X_all)
+    y_pool = pd.concat(y_all)
+    w_pool = np.concatenate(w_all)
+    
+    # LightGBM의 weight 파라미터로 유사도 가중 학습
+    train_data = lgb.Dataset(X_pool, label=y_pool, weight=w_pool)
+    
+    model = lgb.train(
+        params={'objective': 'regression', 'metric': 'rmse'},
+        train_set=train_data,
+        num_boost_round=500
+    )
+    
+    # M의 실제 테스트 데이터에 직접 예측
+    y_pred = model.predict(target_M_test[global_features])
+    return y_pred
+```
+
+### B.4 장단점
+
+| 장점 | 단점 |
+|:---|:---|
+| 시계열 구조 100% 보존 — 각 데이터셋 내 윈도우 순서 유지 | 공통 피처만 사용 가능 (로컬 피처 차원이 다르므로 풀링 불가) |
+| LightGBM `weight` 한 줄로 구현 — 논문의 재표집을 수학적으로 동등하게 구현 | 단일 모델 → Global + Specialized 2단계 구조 포기 |
+| 규모 불균형 자동 해결 (w = s_j / N_j) | |
+
+### B.5 Prioleau et al. (2025) 준수 여부
+
+| 기준 | 준수 | 근거 |
+|:---|:---:|:---|
+| Interpolation/extrapolation 금지 | ✅ | 실제 데이터만 사용. 가중치 변경은 데이터 자체를 변형하지 않음 |
+| Test set smoothing 금지 | ✅ | 테스트 셋에 어떤 변형도 가하지 않음 |
+| 결측 구간 제외 | ✅ | 기존 전처리 파이프라인 유지 |
+
+---
+
+## Appendix C: Patient-Level Transfer (권장)
+
+### C.1 개요
+
+논문의 Step 4(행 단위 재표집)를 **환자(subject) 단위 재표집**으로 격상시킨다. 개별 윈도우가 아닌 **환자의 전체 시계열 시퀀스**를 재표집의 단위로 사용하여, 각 환자 내부의 시간적 자기상관 구조를 100% 보존한다.
+
+### C.2 핵심 논리: 왜 환자 단위가 Prioleau et al.에 부합하는가?
+
+Prioleau et al. (2025)이 금지하는 것: **데이터 포인트 수준의 인위적 조작**
+- ❌ Interpolation: 실측되지 않은 시점의 혈당값을 추정하여 삽입
+- ❌ Extrapolation: 관측 범위 밖의 혈당값을 추정
+- ❌ Smoothing: 기존 혈당값을 인위적으로 변형
+- ❌ Synthetic resampling + noise: 기존 데이터 포인트를 복제하고 노이즈 주입 (위 3가지의 상위호환)
+
+Prioleau et al. (2025)이 금지하지 **않는** 것: **학습 데이터 구성 전략**
+- ✅ 어떤 환자의 데이터를 학습에 포함할지 선택 (subject selection)
+- ✅ 어떤 데이터셋을 학습에 포함할지 선택 (dataset selection)
+- ✅ 학습/검증/테스트 분할 방식 결정
+
+**환자 단위 전이의 핵심:** 각 환자의 시계열 데이터를 **한 글자도 변형하지 않는다.** 단지 "어떤 환자들을 학습 풀에 포함시킬 것인가"의 선택 문제로 전환한다. 이는 의학 연구에서 코호트를 구성할 때 포함/배제 기준(inclusion/exclusion criteria)을 적용하는 것과 동일한 수준의 조작이다.
+
+### C.3 수정된 알고리즘
+
+```
+Step 1: [동일] Global GBM f_G를 K개 pooled dataset의 공통 피처로 학습
+
+Step 2: [동일] 각 j ∈ K에 대해 Specialized GBM f_j를 (공통 + 고유) 피처로 학습,
+        f_G 출력을 초기값으로 사용
+
+Step 3: [동일] 유사도 점수 s_j 계산
+
+Step 4: [수정 — Patient-Level Resampling]
+        각 source 데이터셋 j에서, 유사도 점수 s_j에 비례한 수의 환자를
+        무작위 선택한다. 선택된 환자의 전체 시계열 시퀀스를 변형 없이
+        그대로 학습 풀에 포함한다.
+
+        구체적으로:
+        (a) 총 학습 환자 수 N_total 설정 (예: 전체 환자의 80%)
+        (b) 데이터셋 j에서 선택할 환자 수: n_j = round(N_total × s_j)
+        (c) 데이터셋 j에서 n_j명을 무작위 선택 (replace=True if n_j > N_j)
+        (d) 선택된 환자의 모든 시계열 윈도우를 원본 그대로 유지
+        (e) 데이터 수준의 어떤 변형(노이즈, 보간, 평활)도 적용하지 않음
+
+Step 5: [수정 — 2단계 예측]
+        (a) 선택된 환자 풀로 similarity-aware 모델 학습 (또는 f_G + f_j 구조 유지)
+        (b) Target M의 실제 테스트 데이터에 직접 적용하여 예측
+```
+
+### C.4 구현
+
+```python
+import lightgbm as lgb
+import numpy as np
+import pandas as pd
+
+def train_transfer_C(source_datasets, source_patient_ids, similarity_scores, 
+                     target_M_test, N_total_patients=500):
+    """
+    대안 C: Patient-Level Transfer
+    
+    source_datasets: {j: DataFrame} — 각 데이터셋의 전체 윈도우 데이터
+    source_patient_ids: {j: list} — 각 데이터셋의 환자 ID 목록
+    similarity_scores: {j: s_j} — 유사도 점수 (sum=1)
+    target_M_test: DataFrame — target M의 실제 테스트 데이터
+    N_total_patients: int — 학습 풀에 포함할 총 환자 수
+    """
+    selected_data = []
+    
+    for j, patient_ids in source_patient_ids.items():
+        s_j = similarity_scores[j]
+        n_j = max(1, round(N_total_patients * s_j))  # 유사도 비례 환자 수
+        
+        # 환자 단위 선택 (n_j > len(patient_ids)이면 중복 허용)
+        selected_ids = np.random.choice(
+            patient_ids, 
+            size=min(n_j, len(patient_ids)), 
+            replace=False
+        )
+        
+        # 선택된 환자의 전체 시퀀스를 원본 그대로 포함
+        ds = source_datasets[j]
+        patient_data = ds[ds['patient_id'].isin(selected_ids)]
+        selected_data.append(patient_data)
+    
+    # 풀링 (공통 피처만)
+    pool = pd.concat(selected_data)
+    
+    # Step 1: Global model 학습
+    global_model = lgb.train(
+        params={'objective': 'regression', 'metric': 'rmse'},
+        train_set=lgb.Dataset(pool[global_features], pool['target']),
+        num_boost_round=500
+    )
+    
+    # Step 5: M의 실제 테스트 데이터에 적용
+    y_pred = global_model.predict(target_M_test[global_features])
+    return y_pred, global_model
+```
+
+### C.5 Prioleau et al. (2025) 준수 여부 — 조항별 상세 검증
+
+| Prioleau et al. 기준 | 준수 | 상세 근거 |
+|:---|:---:|:---|
+| **Interpolation 금지** (§5.3) | ✅ | 관측되지 않은 시점의 혈당값을 어떤 방식으로도 생성하지 않음 |
+| **Extrapolation 금지** (§5.3) | ✅ | 관측 범위 밖의 혈당값을 추정하지 않음 |
+| **Test set smoothing 금지** (§6.1) | ✅ | target M의 테스트 데이터에 어떤 변형도 가하지 않음 |
+| **결측 구간 제외** (§5.3) | ✅ | 기존 Tier 2.5 전처리의 결측 제거 결과를 그대로 사용 |
+| **데이터 노이즈 주입 금지** (implied) | ✅ | 선택된 환자 데이터에 노이즈를 추가하지 않음 |
+| **시계열 시간 순서 보존** (implied) | ✅ | 환자의 전체 시퀀스를 원본 그대로 유지. 윈도우 순서 변경 없음 |
+| **Train/Test 분리** ([48]) | ✅ | LODO 구조에서 M의 데이터는 학습에 포함되지 않음 |
+
+> [!TIP]
+> **대안 C가 논문의 원래 의도에 가장 충실한 이유:** Nalmpatian et al.의 Step 4가 하는 것은 본질적으로 "유사한 source에서 더 많은 데이터를 가져와 target을 대리한다"이다. 행 단위를 환자 단위로 격상시키면 이 본질을 보존하면서 시계열 무결성도 확보한다. 보험 사망률에서 "행 = 독립적인 계약자 그룹"이었던 것이, CGM에서는 "환자 = 독립적인 시계열 단위"에 대응한다. **재표집의 단위(grain)만 데이터 특성에 맞게 조정**한 것이다.
+
+### C.6 장단점
+
+| 장점 | 단점 |
+|:---|:---|
+| 시계열 구조 100% 보존 | 환자 수가 적은 데이터셋(BIGIDEAs 16명)에서 선택 해상도가 낮음 |
+| Prioleau 가이드라인 완전 준수 | 동일 환자 중복 선택 시(replace=True) 학습 데이터 편향 가능 |
+| 논문의 2단계 구조 + 유사도 가중 개념 보존 | 환자 간 이질성이 큰 경우, 환자 단위 선택이 충분히 세밀하지 않을 수 있음 |
+| Specialized model에 로컬 피처 투입 가능 | 유사도 점수가 데이터셋 수준이므로, 환자 개인의 유사도는 반영하지 않음 |
+| 생물학적 타당성 유지 — 실제 환자의 실제 혈당 궤적만 사용 | |
+
+---
+
+*작성일: 2026-04-15 (Updated) | Glucose-ML-Project Tier 4 Literature Review Series*
