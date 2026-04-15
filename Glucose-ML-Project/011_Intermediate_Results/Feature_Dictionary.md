@@ -177,8 +177,10 @@ Tier 2.5의 모든 변수를 Superset으로 유지하며, 아래의 변수들을
 | `SD1` | $\text{SD1} = \frac{1}{\sqrt{2}} \cdot \text{std}(\Delta G_{t-5:t})$ | mg/dL | Poincaré 단기 잔물결 변동성: 스텝-바이-스텝 혈당 변화량의 표준편차를 $\sqrt{2}$로 정규화한 비선형 생리 안정성 지수 |
 
 > **총 Feature Dimension 공식:**
-> $$D_{2.5\_v2} = D_{2.5} + N_{\text{core\_cov}} \times 6 + 2$$
-> - $N_{\text{core\_cov}} \times 6$: 핵심 공변량 1개당 $\sin/\cos \times 3$ 주기
+
+$$D_{2.5\_v2} = D_{2.5} + N_{\text{core cov}} \times 6 + 2$$
+
+> - $N_{\text{core cov}} \times 6$: 핵심 공변량 1개당 $\sin/\cos \times 3$ 주기
 > - $+2$: Jerk, SD1
 
 ---
