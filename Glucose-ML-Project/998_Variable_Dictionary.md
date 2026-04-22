@@ -77,7 +77,7 @@
 
 | 데이터셋 | 제외 사유 |
 |---|---|
-| `Park_2025` | `timestamp`가 식사 기준 상대 시간(분)이며, 절대 시각이 아님. 연속 CGM 예측 태스크에 부적합. |
+| `Park_2025` | `timestamp`가 식사 기준 상대 시간(분)이며 시간 순서를 복원할 수 없음. 연속 CGM 예측 태스크에 부적합. (999_Preprocessing_Rules.md Rule 9 참고) |
 
 ### 1.9 연산 설정
 
@@ -154,6 +154,35 @@ Tier 6 전용 추가 변수 (유지)
 | `N_GLOBAL_TS_FEATURES` | `int` | `20` | 전역 시계열 피처 차원 수 |
 | `TCA_N_COMPONENTS` | `int` | `10` | Transfer Component Analysis 성분 수 |
 
+### 2.4 Tier 7 (016_Tier_7_Cross_Disease)
+
+GlobalConfig 상속. 아래 항목만 추가로 정의한다.
+
+**EXPERIMENT_GROUPS** (샘플링 주기 × 소스/타겟 그룹 정의)
+
+| 그룹명 | 샘플링 주기 | 소스 데이터셋 (T1D) | 타겟 데이터셋 |
+|---|---|---|---|
+| `5min` | 5분 | RT-CGM, IOBP2, FLAIR, SENCE, WISDM, PEDAP | CITY, Colas_2019 |
+| `15min` | 15분 | ShanghaiT1DM, Bris-T1D_Open | ShanghaiT2DM |
+
+소스와 타겟은 반드시 같은 그룹 내에서 선택한다. 그룹 간 혼합 금지 (AGENTS.md L27-28).
+
+**TrAdaBoost 파라미터**
+
+| 변수명 | 타입 | 값 | 설명 |
+|---|---|---|---|
+| `TRADABOOST_N_ITER` | `int` | `20` | TrAdaBoost 부스팅 반복 횟수 |
+| `TRADABOOST_ENSEMBLE` | `int` | `10` | 앙상블에 사용할 후반 모델 수 (마지막 N개 평균) |
+
+**기타 Tier 7 전용 변수**
+
+| 변수명 | 타입 | 값 | 설명 |
+|---|---|---|---|
+| `LGBM_ROUNDS` | `int` | `2000` | LightGBM 최대 학습 라운드 수 |
+| `LGBM_EARLY_STOPPING` | `int` | `100` | Early Stopping 기준 라운드 수 |
+| `LEARNING_CURVE_RATIOS` | `list[float]` | `[0.05, 0.1, 0.2, 0.3, 0.5, 0.7, 1.0]` | 학습 곡선 실험: 타겟 데이터 비율 단계 |
+| `SHAP_SAMPLE_N` | `int` | `2000` | SHAP 분석에 사용할 샘플 수 |
+
 ---
 
 ## 3. 파생 변수 (Feature Engineering)
@@ -183,6 +212,15 @@ Tier 3~5 추가 피처 (현재 v3에서는 미사용)
 | `Window_AUC` | 룩백 구간 혈당 곡선하 면적 |
 | `Jerk` | 3차 미분 (가속도 변화율) |
 
+Tier 7 추가 피처 (T2D 도메인 특화)
+
+| 피처명 | 수식 | 설명 |
+|---|---|---|
+| `fasting_proxy` | `mean(g) × [hour < 6]` | 공복 시간대(00:00~06:00) 평균 혈당. T2D 기저 저항성 프록시. |
+| `postmeal_rise` | `max(0, g[-1] - min(g))` | 룩백 구간 내 최솟값 대비 현재 상승폭. 식후 혈당 반응 추정. |
+| `high_persist` | `mean(g > 180)` | 룩백 구간 중 고혈당(>180 mg/dL) 비율. 지속성 고혈당 패턴. |
+| `in_range_frac` | `mean(70 ≤ g ≤ 180)` | 룩백 구간 중 목표 범위 내 비율. |
+
 ---
 
 ## 4. 임상 기준값 (TIR/TAR/TBR)
@@ -203,3 +241,6 @@ Tier 3~5 추가 피처 (현재 v3에서는 미사용)
 | 2026-04-22 | Train/Val/Test 3-way 분리 도입 (70/15/15) | Rule 5 |
 | 2026-04-22 | `Park_2025` 제외 데이터셋 등록 | Rule 9 |
 | 2026-04-22 | `GlobalConfig` 생성, 단일 진실 원본 확립 | Rule 6, AGENTS.md |
+| 2026-04-22 | 신규 데이터셋 7개 추가 (RT-CGM, CITY, SENCE, WISDM, FLAIR, SHD, ReplaceBG) — 총 26개 | 997_Active_Datasets.md |
+| 2026-04-22 | Rule 9 재구성 타임스탬프 허용 기준 추가 (SHD, ReplaceBG) | 999_Preprocessing_Rules.md Rule 9 |
+| 2026-04-22 | Tier 7 생성: T1D→T2D 전이학습 실험 (5-way 비교, TrAdaBoost) | 016_Tier_7_Cross_Disease |

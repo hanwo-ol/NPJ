@@ -1,0 +1,78 @@
+﻿=== PAGE 5 ===
+Questionnaire / Survey (Q)
+Demographic data (e.g.age, sex/gender, diabetes duration, race/ethnicity, etc.)
+Activity Tracker (A)
+Heart rateStep countSleep metricsSkin temperatureAccelerometry dataGalvanic skin response
+Insulin Delivery System (I)
+Insulin dosesCarbohydrate input
+Continuous Glucose Monitor (G)
+Glucose
+Self-Report / Mobile App (S)
+User logs (e.g.meal, exercise, medication, life events)
+Medical Record / Clinical Measurement (M) 
+Lab measurements (e.g.oral glucose test, hemoglobin A1C, cholesterol, triglycerides, etc.)ShanghaiT1DM: G, S, Q, MDiaTrend: G, I, Q, MBIG IDEAs: G, A, Q, MT1DEXI: G, I, A, S, Q, MOhioT1DM: G, I, A, S, QCGMacros: G, A, S, Q, MUCHTT1DM: G, I, A, SAI-READI: G, A, Q, MT1DiabetesGranada: G, Q, MShanghaiT2DM: G, S, Q, MGlucose-ML CollectionFigure 1: Overview of data types included within individual datasets in the Glucose-ML collection.
+record/clinical measurements. Fig. 1 presents a comparative overview of various data sources and
+data types across individual datasets in the Glucose-ML collection. From this figure, we can observe
+that the T1DEXI dataset is potentially the most comprehensive dataset as it includes glucose data,
+insulin-related data (e.g. insulin doses and carbohydrate input), activity tracker data (e.g. heart rate,
+step count, sleep metrics), user logs (e.g., meals, exercise), demographic data (e.g. age, sex/gender,
+diabetes duration), and lab measurements (e.g. hemoglobin A1C). However, T1DEXI comprise a
+population of people with T1D only, and mean data duration is 27 days/person as shown in Table 1.
+Fig. 2A presents a comparison of the populations and sample size represented in each individual
+dataset within the Glucose-ML collection. From this figure, we can observe that there are between
+12 - 1067 participants in each individual dataset. Five out of the ten datasets are solely from cohorts
+with T1D (50%), one dataset is solely from a cohort with T2D (10%), while the remaining four
+datasets include participants with T2D, prediabetes, and no diabetes (20%), T1D and no diabetes
+(10%) and prediabetes and no diabetes (10%). From Fig. 2B, we see that there are between 127 -
+257,782 days of CGM data in each dataset. The majority of longitudinal diabetes datasets (80%)
+include short durations of glucose data per participant (i.e., less than 60 days). Only DiaTrend [ 89]
+and T1DiabetesGranada [ 96] include long durations of glucose data per participant (i.e., more than 6
+months, and in many cases, multiple years of longitudinal glucose data).
+Given that glucose data in these longitudinal diabetes datasets is collected via wearable CGMs,
+missing data is not uncommon. Clinical consensus guidelines recommend the availability of more
+than 70% of possible CGM readings to provide adequate glucose data for evaluating diabetes
+management [ 11,25]. Therefore, in this study we leverage insights from prior work to identify
+missing CGM data when glucose readings are not present for more than three times the expected
+sampling rate of the distinct CGM used within each dataset (i.e., Dexcom, Medtronic, or FreeStyle
+Libre CGMs) [ 23,32,107]. For example, a Dexcom G6 CGM generally records glucose data
+every 5 minutes. Therefore, a period of missing data is identified when the difference between two
+consecutive timestamps of glucose readings has a duration of 15 minutes or more. Fig. 2C presents
+an overview of the percentage of CGM days with adequate (i.e., ??0%) versus inadequate glucose
+data for each dataset. From this figure, we can observe that all datasets included in our collection
+have sufficient glucose data (i.e., < 25% missing data) within the data collection period of each study.
+Finally, we compared the blood glucose dynamics of participants within each dataset using clinically-
+validated metrics, namely time in glucose ranges [ 11]. These metrics quantify the percentage of
+glucose readings that are within the target/normal range of 70 - 180 mg/dL (TIR), below the target
+range (TBR), and above the target range (TAR). Fig. 2D presents an overview of the percentage of
+blood glucose values within the five clinically-relevant target ranges for each dataset. It is important
+to note that we only calculate the time in various glucose ranges on days with adequate glucose
+data (i.e., > 70% of CGM data available). From Fig. 2D, we can observe that DiaTrend [ 89] has
+the lowest TIR of 51%, whereas the clinical recommendation for persons with T1D is to maintain a
+5
+
+=== PAGE 6 ===
+AB
+C
+D
+Figure 2: Comparative analysis of sample size and population (A), longitudinal glucose duration (B),
+data quality and sufficiency (C), and glucose dynamics (D) across 10 public diabetes datasets.
+target TIR of greater than 70% [ 11]. This significant difference between real-world blood glucose
+control in DiaTrend and the clinical recommendation shows that the DiaTrend dataset is the most
+dynamic and potentially the most challenging dataset to be used for developing and evaluating robust
+AI algorithms for populations with T1D. Conversely, the BIG IDEAs dataset [ 13,20] which was
+collected from a population with prediabetes and no diabetes has the highest TIR of 97.6%. This
+observation shows that BIG IDEAs dataset comprises more stable and in-range glucose dynamics so
+AI algorithms developed and evaluated solely on this dataset will likely report better performance
+due to the less challenging context.
+5 Case study: Blood glucose prediction
+Informed by several literature reviews within the field, we observed that blood glucose prediction is
+one of the most common task for which AI/ML algorithms are developed within the diabetes domain
+[5,22,31,38,41,48,113,114]. This is a classic time-series prediction problem for which statistical,
+traditional, and deep learning methods have been used to solve in prior literature. Given this, we
+conduct a case study for the task of predicting blood glucose 30-minutes ahead using two na챦ve
+baseline methods recommended to serve as benchmarks for comparison with new and more advanced
+AI algorithms. The objective of this case study is not to present a novel AI algorithm for the task,
+but to characterize and compare the performance of na챦ve prediction algorithms across 10 publicly
+available diabetes datasets within the GlucoseML collection.
+6
+

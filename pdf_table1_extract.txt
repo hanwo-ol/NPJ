@@ -1,0 +1,230 @@
+﻿=== PAGE 4 ===
+Table 1: Overview of the Glucose-ML collection comprising 10 public diabetes datasets available for
+development of robust AI solutions.
+Publicly available
+Diabetes DatasetsAccessibility Year CountryPerson
+CountDays / Person Total Glucose
+Samplesa Mean Range
+OhioT1DM [69, 68] Controlled 20201US 12 54 48??7 166,533
+T1DEXI [49, 94] Controlled 2022 US 497 27 3??8 3,785,253
+BIG IDEAs [20, 13] Open 2023 US 16 9.38 8??1 36,898
+DiaTrend [88, 89] Controlled 2023 US 54 512 31??907 7,680,740
+ShanghaiT1DM [120, 119] Open 2023 China 12 15 7??2 15,695
+ShanghaiT2DM [120, 119] Open 2023 China 100 13 4??1 112,475
+T1DiabetesGranada [96, 95] Controlled 2024 Spain 736 350 8??463 22,671,708
+AI-READI2[6, 21] Controlled 2024 US 1067 11 2??3 2,880,509
+UCHTT1DM [58, 57] Open 2024 Chile 20 6 3?? 29,174
+CGMacros3[43] Open 2025 US 45 11 8??0 629,825
+Glucose-ML Total 2,559 38,008,810
+1OhioT1DM was initially released in year 2018, then it was updated to the current version released in year 2020.
+2This study leverages v2.0.0 of the AI-READI dataset comprising data from 1067 participants that was collected
+between July 19, 2023 and July 31, 2024.
+3The CGMacros dataset includes glucose values from both Dexcom and Freestyle Libre CGMs for each
+participant. This study leverages glucose values from only the Dexcom CGMs for analysis.
+The specific sensors used for collecting glucose data across all datasets include CGMs manufactured
+by Medtronic (i.e. Medtronic Enlite and Guardian) [ 73], Dexcom (i.e., Dexcom G5, G6, and Pro)
+[27] and Abbott (i.e., FreeStyle Libre 1, 2 and Pro) [ 4]. In general, CGM sensors by Medtronic and
+Dexcom repeatedly measure glucose every 5 minutes, and have a lifespan of up to 7 days and up to
+10 days respectively, after which the sensor should be replaced. Meanwhile, Freestyle Libre CGMs
+by Abbott measure glucose every 15 minutes and have a lifespan of up to 14 days after which the
+sensor should be replaced. These CGMs are clinically-validated and FDA-approved sensors that
+report glucose readings between the range of 40 - 400 mg/dL [25, 11].
+3.1 Dataset accessibility
+Table 1 shows that each individual dataset within the Glucose-ML collection is publicly available
+either through open or controlled access. The individual datasets are hosted on several hosting sites,
+including dedicated institutional sites [ 69], Vivli [ 109], Physionet [ 84,39], Synapse [ 98], Figshare
+[44], Zenodo [3], FAIRhub [1], and Github [2].
+3.2 Ethics and fairness
+All datasets within the Glucose-ML collection are reported to be obtained in accordance with the
+relevant ethical guidelines, including approval by an appropriate institutional review board (IRB) and
+all participants provided informed consent. These datasets are fully de-identified such that they do
+not contain personally identifiable data. Additionally, a data use agreement (DUA) is required for
+datasets released via controlled access. Conversely, the majority of open access datasets are released
+with an appropriate license, such as the Open Data Commons Attribution License and the Creative
+Commons Attribution-NonCommercial License. The three exceptions are the UCHTT1DM [ 58] and
+ShanghaiT1DM & ShanghaiT2DM [ 120] datasets which are released openly on Github and Figshare,
+but do not include an associated license.
+4 Comparative analysis of diabetes datasets
+In this study, we conducted comparative analysis across all 10 publicly-available datasets within the
+Glucose-ML collection to elicit unique strengths and weaknesses of each dataset. Our comparative
+analysis can also guide in the process of selecting diabetes-relevant datasets to support development
+of robust AI solutions. While the majority of our analysis focuses on glucose data from CGMs, it is
+important to note that these datasets also include diabetes-relevant data from other sources such as
+insulin delivery systems, activity trackers, user logs/mobile apps, questionnaires/surveys, and medical
+4
+
+=== PAGE 5 ===
+Questionnaire / Survey (Q)
+Demographic data (e.g.age, sex/gender, diabetes duration, race/ethnicity, etc.)
+Activity Tracker (A)
+Heart rateStep countSleep metricsSkin temperatureAccelerometry dataGalvanic skin response
+Insulin Delivery System (I)
+Insulin dosesCarbohydrate input
+Continuous Glucose Monitor (G)
+Glucose
+Self-Report / Mobile App (S)
+User logs (e.g.meal, exercise, medication, life events)
+Medical Record / Clinical Measurement (M) 
+Lab measurements (e.g.oral glucose test, hemoglobin A1C, cholesterol, triglycerides, etc.)ShanghaiT1DM: G, S, Q, MDiaTrend: G, I, Q, MBIG IDEAs: G, A, Q, MT1DEXI: G, I, A, S, Q, MOhioT1DM: G, I, A, S, QCGMacros: G, A, S, Q, MUCHTT1DM: G, I, A, SAI-READI: G, A, Q, MT1DiabetesGranada: G, Q, MShanghaiT2DM: G, S, Q, MGlucose-ML CollectionFigure 1: Overview of data types included within individual datasets in the Glucose-ML collection.
+record/clinical measurements. Fig. 1 presents a comparative overview of various data sources and
+data types across individual datasets in the Glucose-ML collection. From this figure, we can observe
+that the T1DEXI dataset is potentially the most comprehensive dataset as it includes glucose data,
+insulin-related data (e.g. insulin doses and carbohydrate input), activity tracker data (e.g. heart rate,
+step count, sleep metrics), user logs (e.g., meals, exercise), demographic data (e.g. age, sex/gender,
+diabetes duration), and lab measurements (e.g. hemoglobin A1C). However, T1DEXI comprise a
+population of people with T1D only, and mean data duration is 27 days/person as shown in Table 1.
+Fig. 2A presents a comparison of the populations and sample size represented in each individual
+dataset within the Glucose-ML collection. From this figure, we can observe that there are between
+12 - 1067 participants in each individual dataset. Five out of the ten datasets are solely from cohorts
+with T1D (50%), one dataset is solely from a cohort with T2D (10%), while the remaining four
+datasets include participants with T2D, prediabetes, and no diabetes (20%), T1D and no diabetes
+(10%) and prediabetes and no diabetes (10%). From Fig. 2B, we see that there are between 127 -
+257,782 days of CGM data in each dataset. The majority of longitudinal diabetes datasets (80%)
+include short durations of glucose data per participant (i.e., less than 60 days). Only DiaTrend [ 89]
+and T1DiabetesGranada [ 96] include long durations of glucose data per participant (i.e., more than 6
+months, and in many cases, multiple years of longitudinal glucose data).
+Given that glucose data in these longitudinal diabetes datasets is collected via wearable CGMs,
+missing data is not uncommon. Clinical consensus guidelines recommend the availability of more
+than 70% of possible CGM readings to provide adequate glucose data for evaluating diabetes
+management [ 11,25]. Therefore, in this study we leverage insights from prior work to identify
+missing CGM data when glucose readings are not present for more than three times the expected
+sampling rate of the distinct CGM used within each dataset (i.e., Dexcom, Medtronic, or FreeStyle
+Libre CGMs) [ 23,32,107]. For example, a Dexcom G6 CGM generally records glucose data
+every 5 minutes. Therefore, a period of missing data is identified when the difference between two
+consecutive timestamps of glucose readings has a duration of 15 minutes or more. Fig. 2C presents
+an overview of the percentage of CGM days with adequate (i.e., ??0%) versus inadequate glucose
+data for each dataset. From this figure, we can observe that all datasets included in our collection
+have sufficient glucose data (i.e., < 25% missing data) within the data collection period of each study.
+Finally, we compared the blood glucose dynamics of participants within each dataset using clinically-
+validated metrics, namely time in glucose ranges [ 11]. These metrics quantify the percentage of
+glucose readings that are within the target/normal range of 70 - 180 mg/dL (TIR), below the target
+range (TBR), and above the target range (TAR). Fig. 2D presents an overview of the percentage of
+blood glucose values within the five clinically-relevant target ranges for each dataset. It is important
+to note that we only calculate the time in various glucose ranges on days with adequate glucose
+data (i.e., > 70% of CGM data available). From Fig. 2D, we can observe that DiaTrend [ 89] has
+the lowest TIR of 51%, whereas the clinical recommendation for persons with T1D is to maintain a
+5
+
+=== PAGE 6 ===
+AB
+C
+D
+Figure 2: Comparative analysis of sample size and population (A), longitudinal glucose duration (B),
+data quality and sufficiency (C), and glucose dynamics (D) across 10 public diabetes datasets.
+target TIR of greater than 70% [ 11]. This significant difference between real-world blood glucose
+control in DiaTrend and the clinical recommendation shows that the DiaTrend dataset is the most
+dynamic and potentially the most challenging dataset to be used for developing and evaluating robust
+AI algorithms for populations with T1D. Conversely, the BIG IDEAs dataset [ 13,20] which was
+collected from a population with prediabetes and no diabetes has the highest TIR of 97.6%. This
+observation shows that BIG IDEAs dataset comprises more stable and in-range glucose dynamics so
+AI algorithms developed and evaluated solely on this dataset will likely report better performance
+due to the less challenging context.
+5 Case study: Blood glucose prediction
+Informed by several literature reviews within the field, we observed that blood glucose prediction is
+one of the most common task for which AI/ML algorithms are developed within the diabetes domain
+[5,22,31,38,41,48,113,114]. This is a classic time-series prediction problem for which statistical,
+traditional, and deep learning methods have been used to solve in prior literature. Given this, we
+conduct a case study for the task of predicting blood glucose 30-minutes ahead using two na챦ve
+baseline methods recommended to serve as benchmarks for comparison with new and more advanced
+AI algorithms. The objective of this case study is not to present a novel AI algorithm for the task,
+but to characterize and compare the performance of na챦ve prediction algorithms across 10 publicly
+available diabetes datasets within the GlucoseML collection.
+6
+
+=== PAGE 7 ===
+5.1 Na챦ve Baseline Algorithms
+Building on best practice guidelines [ 48], we implement two na챦ve models, including 1) a zero-order
+hold predictor, and 2) a simple linear regression predictor, for the task of blood glucose prediction.
+?줫ero-hold predictor (also known as a persistent baseline) simply assumes the predicted
+value will not change in the future. Therefore, when using a zero-hold predictor for blood
+glucose prediction 30-mins ahead, we simply use the exact glucose value 30 minutes prior
+as the prediction 30 minutes ahead. This baseline implementation is described as linear
+extrapolation in the work by Fox et al. [34].
+?줤imple linear regression predictor fits a regression line across the most recent history of a
+given duration ( H), then uses this regression line to predict blood glucose 30 minutes ahead
+[48]. In our implementation of a simple linear regression predictor, we used a history of
+between 10 - 30 minutes based on the sampling frequency of the specific CGM used for
+data collection within each dataset. For studies that used a Dexcom or Medtronic CGM,
+both of which record approximately one glucose reading every 5 minutes, we used a history
+duration of 10 minutes with the goal of having three consecutive glucose readings at t,
+t= 5mins , and t+ 10mins as the basis for fitting a regression line. Conversely, for
+studies that used a FreeStyle Libre CGM (i.e., ShanghaiT1DM & ShanghaiT2DM [ 119],
+and T1DiabetesGranada [ 95]), we used a history duration of 30 minutes with the similar
+goal of having three consecutive glucose readings t,t= 15mins ,t+ 30mins as the basis
+for fitting a regression line.
+5.2 Data Cleaning
+Toward the goal of predicting blood glucose 30 minutes ahead using the aforementioned na챦ve
+baseline algorithms, we started by conducting simple data cleaning steps to remove unrealistic
+glucose readings within individual datasets in the GlucoseML collection. Our first data cleaning
+step included removing non-numeric glucose readings and glucose readings that are not within the
+standard CGM range of 40 - 400mg/dL. Examples of excluded glucose recordings include recordings
+of "LOW" and "HIGH" in place of an actual glucose value in the AI-READI dataset. Following
+this, we removed consecutive glucose recordings with an unrealistic rate of change. Informed by the
+paper by DeSalvo and Buckingham, we removed consecutive glucose readings that were less than
+30 seconds apart and/or that had a rate of change greater than 20mg/dL/min, which is 5 times the
+reported rate of change for detecting missed meal boluses [ 26]. Table 5 in the Appendix provides a
+summary of the total glucose recordings in each dataset before the data cleaning steps, number of
+recordings excluded, and total glucose samples after data cleaning.
+5.3 Algorithm Implementation, Handling Missing Data, and Performance Evaluation
+Since our two na챦ve baseline algorithms have minimal or no parameters that need to be learned
+from a training dataset, our implementation of these methods was run on the full data duration of
+participants within the individual datasets (except for OhioT1DM). In the case of OhioT1DM [ 68]
+where a train/test split was provided by the original data creators, we evaluated the na챦ve algorithms
+on the apportioned test set only. However, our implementation did not require splitting the other
+datasets into a training, validation, and/or test set. Informed by best practice guidelines, we excluded
+periods of missing data from our analysis to avoid interpolation or extrapolation approaches that
+can introduce errors into the prediction model and reported accuracy [ 48]. Finally, to facilitate easy
+comparison of the performance of na챦ve prediction algorithms across 10 publicly available diabetes
+datasets, we report the accuracy of each prediction method using root mean squared error (RMSE)
+[46,48]. A lower RMSE equates to less prediction error, while a higher RMSE equates to more
+prediction error and thus worse prediction performance.
+Computing Resources : All experiments were conducted on a MacBook Air (Apple M2 CPU, 8 GB
+and 16GB RAM), and run using CPUs only. The total estimated preprocessing time is ??0 seconds.
+The runtime varied depending on the dataset duration, ranging from ?? minute to 4 hours per dataset.
+Per Table 1 and Appendix Table 5, we see that T1DiabetesGranada [ 95,96] has the largest number of
+glucose samples (22.6 million) with an average of 1 year of glucose data per participant, and up to
+4 years of glucose data across individual participants. As a result, this dataset required the longest
+runtime. The total estimated storage required for analysis in this study is ?? GB.
+7
+
+=== PAGE 8 ===
+Figure 3: Performance overview for two na챦ve baseline algorithms, zero-order hold and simple linear
+regression, predicting blood glucose 30 minutes ahead using 10 publicly available diabetes datasets.
+5.4 Results for Blood Glucose Prediction
+Fig. 3 and Table 2 present the results for predicting blood glucose 30 minutes ahead using the
+aforementioned na챦ve baseline methods. From Fig. 3, we observe that the zero-order hold predictor
+performed better as evident by the lower RMSE compared to the simple linear regression predictor
+in all 10 diabetes datasets. Given this, we will focus the rest of our analysis on the results from the
+zero-order predictor for assessing the performance difference across datasets. From Table 2, we
+observe that the zero-order hold predictor achieved the lowest RMSE of 16.1 짹2.72 mg/dL on BIG
+IDEAs, meanwhile the same method achieved the highest RMSE of 28.14 짹4.96 mg/dL on DiaTrend.
+A Mann-Whitney U test [ 72] was performed to compare the glucose prediction performance of the
+zero-order hold predictor on the BIG IDEAs and DiaTrend datasets. We found that there is a
+statistically significant difference in the glucose prediction performance of the same method on the
+BIG IDEAs dataset and the DiaTrend dataset; U-statistic = 8, Z= -5.92, p=3.16e??. These findings
+suggest that the dataset used for developing a blood glucose prediction algorithm significantly affects
+the performance obtained.
+To ensure a more fair comparison of blood glucose prediction performance across datasets, we
+identified diabetes datasets with T2D, preD, and ND for comparison, and diabetes datasets with
+T1D only for comparison. We performed a Mann-Whitney U test to compare the glucose prediction
+performance on the BIG IDEAs and CGMacros datasets, both of which are more comparable in
+the represented population. Similarly, we found that there is a statistically significant difference in
+the glucose prediction performance on these two groups; U-statistic = 185, Z= -2.86, p= 0.004. To
+also compare the prediction performance across T1D only datasets, we observed that the zero-order
+hold predictor achieved the lowest RMSE of 20.58 짹3.39 mg/dL on the ShanghaiT1DM dataset
+and the highest RMSE of 28.14 짹4.96 mg/dL on the DiaTrend dataset - see Table 2. We also
+performed a Mann-Whitney U test to compare the glucose prediction performance on DiaTrend and
+ShanghaiT1DM datasets; both solely from T1D populations. We found that there is a statistically
+significant difference in the glucose prediction performance on these two groups; U-statistic = 584,
+Z= 4.33, p=1.6e??. These results further support that the dataset used for developing and evaluating
+a blood glucose prediction algorithm significantly affects the prediction performance obtained.
+6 Discussion
+In this paper, we present Glucose-ML - a collection of 10 publicly available diabetes datasets to
+accelerate development and evaluation of transparent, reproducible, and robust AI solutions. This
+collection comprises longitudinal glucose and other data from 2500+ people living with diabetes
+(i.e., T1D and T2D) and people living without diabetes (i.e., prediabetes and no diabetes). The
+Glucose-ML collection includes over 300,000 days with CGM data and a total of 38 million glucose
+samples across all individual diabetes datasets. To our knowledge, the Glucose-ML collection is
+the largest and most comprehensive in literature to date. In addition to providing a review of recent
+8
+
