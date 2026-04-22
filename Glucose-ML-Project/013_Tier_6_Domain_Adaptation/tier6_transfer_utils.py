@@ -49,7 +49,7 @@ def apply_coral(source_x, target_x):
         return source_x
 
 
-def apply_tca(source_x, target_x, n_components=10, max_samples=5000):
+def apply_tca(source_x, target_x, target_val, target_test, n_components=10, max_samples=5000):
     """
     TCA (Transfer Component Analysis) - Linear Approximation for scalability.
     Since O(N^3) eigenvalue decomposition on millions of windows will OOM, 
@@ -95,11 +95,14 @@ def apply_tca(source_x, target_x, n_components=10, max_samples=5000):
         # Linear approximation: For test data x, projection is (x * X^T) * W
         mapping = np.dot(X.T, W)  
         source_mapped = np.dot(source_x, mapping)
+        target_val_mapped = np.dot(target_val, mapping)
+        target_test_mapped = np.dot(target_test, mapping)
         
-        return source_mapped
+        return source_mapped, target_val_mapped, target_test_mapped
     except Exception as e:
         print(f"TCA decomposition failed: {e}. Returning PCA reduction.")
         # Fallback to PCA if singular
         from sklearn.decomposition import PCA
         pca = PCA(n_components=n_components)
-        return pca.fit_transform(source_x)
+        pca.fit(source_x)
+        return pca.transform(source_x), pca.transform(target_val), pca.transform(target_test)

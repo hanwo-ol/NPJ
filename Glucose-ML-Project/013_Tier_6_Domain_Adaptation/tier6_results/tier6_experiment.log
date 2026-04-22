@@ -1,0 +1,166 @@
+2026-04-21 19:11:43,807 [INFO] Starting Ablation Mode: A
+2026-04-21 19:11:43,808 [INFO] 
+Target: AI-READI
+2026-04-21 19:11:43,809 [INFO] [WARN] Skipped Mode A for AI-READI: Insufficient sequences or structurally invalid data.
+2026-04-21 19:11:43,809 [INFO] 
+Target: AIDET1D
+2026-04-21 19:11:45,940 [INFO] [T6_A_eGMI_self -> AIDET1D] RMSE: 21.262 | Kappa Trend: 0.660
+2026-04-21 19:11:45,949 [INFO] 
+Target: AZT1D
+2026-04-21 19:11:45,954 [INFO] [WARN] Skipped Mode A for AZT1D: Insufficient sequences or structurally invalid data.
+2026-04-21 19:11:45,954 [INFO] 
+Target: BIGIDEAs
+2026-04-21 19:11:46,294 [INFO] [T6_A_eGMI_self -> BIGIDEAs] RMSE: 20.035 | Kappa Trend: 0.000
+2026-04-21 19:11:46,294 [INFO] 
+Target: Bris-T1D_Open
+2026-04-21 19:11:51,791 [INFO] [T6_A_eGMI_self -> Bris-T1D_Open] RMSE: 56.177 | Kappa Trend: 0.505
+2026-04-21 19:11:51,791 [INFO] 
+Target: CGMacros_Dexcom
+2026-04-21 19:11:54,594 [INFO] [T6_A_eGMI_self -> CGMacros_Dexcom] RMSE: 10.509 | Kappa Trend: 0.873
+2026-04-21 19:11:54,594 [INFO] 
+Target: CGMacros_Libre
+2026-04-21 19:11:58,073 [INFO] [T6_A_eGMI_self -> CGMacros_Libre] RMSE: 11.078 | Kappa Trend: 0.918
+2026-04-21 19:11:58,073 [INFO] 
+Target: CGMND
+2026-04-21 19:11:58,638 [INFO] [T6_A_eGMI_self -> CGMND] RMSE: 12.975 | Kappa Trend: 0.101
+2026-04-21 19:11:58,638 [INFO] 
+Target: Colas_2019
+2026-04-21 19:11:58,642 [INFO] [WARN] Skipped Mode A for Colas_2019: Insufficient sequences or structurally invalid data.
+2026-04-21 19:11:58,642 [INFO] 
+Target: D1NAMO
+2026-04-21 19:11:58,643 [INFO] [WARN] Skipped Mode A for D1NAMO: Insufficient sequences or structurally invalid data.
+2026-04-21 19:11:58,643 [INFO] 
+Target: DiaTrend
+2026-04-21 19:11:58,643 [INFO] [WARN] Skipped Mode A for DiaTrend: Insufficient sequences or structurally invalid data.
+2026-04-21 19:11:58,643 [INFO] 
+Target: GLAM
+2026-04-21 19:16:01,283 [INFO] [T6_A_eGMI_self -> GLAM] RMSE: 13.559 | Kappa Trend: 0.393
+2026-04-21 19:16:01,284 [INFO] 
+Target: Hall_2018
+2026-04-21 19:16:01,434 [INFO] [WARN] Skipped Mode A for Hall_2018: Insufficient sequences or structurally invalid data.
+2026-04-21 19:16:01,434 [INFO] 
+Target: HUPA-UCM
+2026-04-21 19:16:03,211 [INFO] [T6_A_eGMI_self -> HUPA-UCM] RMSE: 38.182 | Kappa Trend: 0.584
+2026-04-21 19:16:03,212 [INFO] 
+Target: IOBP2
+2026-04-21 19:18:11,103 [INFO] [T6_A_eGMI_self -> IOBP2] RMSE: 24.477 | Kappa Trend: 0.758
+2026-04-21 19:18:11,104 [INFO] 
+Target: OhioT1DM
+2026-04-21 19:18:11,185 [INFO] [WARN] Skipped Mode A for OhioT1DM: Insufficient sequences or structurally invalid data.
+2026-04-21 19:18:11,186 [INFO] 
+Target: Park_2025
+2026-04-21 19:18:11,442 [INFO] [T6_A_eGMI_self -> Park_2025] RMSE: 20.647 | Kappa Trend: 0.010
+2026-04-21 19:18:11,442 [INFO] 
+Target: PEDAP
+2026-04-21 19:19:24,911 [INFO] [T6_A_eGMI_self -> PEDAP] RMSE: 33.286 | Kappa Trend: 0.670
+2026-04-21 19:19:24,911 [INFO] 
+Target: PhysioCGM
+2026-04-21 19:19:24,981 [INFO] [WARN] Skipped Mode A for PhysioCGM: Insufficient sequences or structurally invalid data.
+2026-04-21 19:19:24,981 [INFO] 
+Target: ShanghaiT1DM
+2026-04-21 19:19:25,004 [INFO] [WARN] Skipped Mode A for ShanghaiT1DM: Insufficient sequences or structurally invalid data.
+2026-04-21 19:19:25,004 [INFO] 
+Target: ShanghaiT2DM
+2026-04-21 19:19:25,146 [INFO] [WARN] Skipped Mode A for ShanghaiT2DM: Insufficient sequences or structurally invalid data.
+2026-04-21 19:19:25,147 [INFO] 
+Target: T1D-UOM
+2026-04-21 19:19:25,147 [INFO] [WARN] Skipped Mode A for T1D-UOM: Insufficient sequences or structurally invalid data.
+2026-04-21 19:19:25,147 [INFO] 
+Target: T1DEXI
+2026-04-21 19:19:25,147 [INFO] [WARN] Skipped Mode A for T1DEXI: Insufficient sequences or structurally invalid data.
+2026-04-21 19:19:25,147 [INFO] 
+Target: T1DEXIP
+2026-04-21 19:19:25,147 [INFO] [WARN] Skipped Mode A for T1DEXIP: Insufficient sequences or structurally invalid data.
+2026-04-21 19:19:25,147 [INFO] 
+Target: T1DiabetesGranada
+2026-04-21 19:19:25,147 [INFO] [WARN] Skipped Mode A for T1DiabetesGranada: Insufficient sequences or structurally invalid data.
+2026-04-21 19:19:25,148 [INFO] 
+Target: UCHTT1DM
+2026-04-21 19:19:25,345 [INFO] [T6_A_eGMI_self -> UCHTT1DM] RMSE: 16.829 | Kappa Trend: 0.284
+2026-04-21 19:19:25,348 [INFO] Ablation Complete. Saved to C:\Users\user\Documents\NPJ2\Glucose-ML-Project\013_Tier_6_Domain_Adaptation\tier6_results\tier6_ablation_A_results.csv
+2026-04-21 19:19:26,644 [INFO] Starting Ablation Mode: B
+2026-04-21 19:19:26,645 [INFO] 
+Target: AI-READI
+2026-04-21 19:19:26,645 [INFO] [WARN] Skipped Mode B for AI-READI: Insufficient sequences or structurally invalid data.
+2026-04-21 19:19:26,645 [INFO] 
+Target: AIDET1D
+2026-04-21 19:19:28,231 [INFO] [T6_B_UMD_virtual -> AIDET1D] RMSE: 21.770 | Kappa: 0.651
+2026-04-21 19:19:28,232 [INFO] 
+Target: AZT1D
+2026-04-21 19:19:28,237 [INFO] [WARN] Skipped Mode B for AZT1D: Insufficient sequences or structurally invalid data.
+2026-04-21 19:19:28,237 [INFO] 
+Target: BIGIDEAs
+2026-04-21 19:19:28,558 [INFO] [T6_B_UMD_virtual -> BIGIDEAs] RMSE: 13.645 | Kappa: 0.273
+2026-04-21 19:19:28,558 [INFO] 
+Target: Bris-T1D_Open
+2026-04-21 19:19:32,841 [INFO] [T6_B_UMD_virtual -> Bris-T1D_Open] RMSE: 32.699 | Kappa: 0.723
+2026-04-21 19:19:32,841 [INFO] 
+Target: CGMacros_Dexcom
+2026-04-21 19:19:35,123 [INFO] [T6_B_UMD_virtual -> CGMacros_Dexcom] RMSE: 3.592 | Kappa: 0.960
+2026-04-21 19:19:35,123 [INFO] 
+Target: CGMacros_Libre
+2026-04-21 19:19:37,743 [INFO] [T6_B_UMD_virtual -> CGMacros_Libre] RMSE: 4.966 | Kappa: 0.988
+2026-04-21 19:19:37,743 [INFO] 
+Target: CGMND
+2026-04-21 19:19:38,397 [INFO] [T6_B_UMD_virtual -> CGMND] RMSE: 13.419 | Kappa: 0.330
+2026-04-21 19:19:38,397 [INFO] 
+Target: Colas_2019
+2026-04-21 19:19:38,402 [INFO] [WARN] Skipped Mode B for Colas_2019: Insufficient sequences or structurally invalid data.
+2026-04-21 19:19:38,402 [INFO] 
+Target: D1NAMO
+2026-04-21 19:19:38,402 [INFO] [WARN] Skipped Mode B for D1NAMO: Insufficient sequences or structurally invalid data.
+2026-04-21 19:19:38,402 [INFO] 
+Target: DiaTrend
+2026-04-21 19:19:38,403 [INFO] [WARN] Skipped Mode B for DiaTrend: Insufficient sequences or structurally invalid data.
+2026-04-21 19:19:38,403 [INFO] 
+Target: GLAM
+2026-04-21 19:26:57,643 [INFO] [T6_B_UMD_virtual -> GLAM] RMSE: 13.720 | Kappa: 0.389
+2026-04-21 19:26:57,643 [INFO] 
+Target: Hall_2018
+2026-04-21 19:26:57,797 [INFO] [WARN] Skipped Mode B for Hall_2018: Insufficient sequences or structurally invalid data.
+2026-04-21 19:26:57,798 [INFO] 
+Target: HUPA-UCM
+2026-04-21 19:26:59,264 [INFO] [T6_B_UMD_virtual -> HUPA-UCM] RMSE: 18.255 | Kappa: 0.830
+2026-04-21 19:26:59,264 [INFO] 
+Target: IOBP2
+2026-04-21 19:30:58,180 [INFO] [T6_B_UMD_virtual -> IOBP2] RMSE: 24.605 | Kappa: 0.758
+2026-04-21 19:30:58,180 [INFO] 
+Target: OhioT1DM
+2026-04-21 19:30:58,265 [INFO] [WARN] Skipped Mode B for OhioT1DM: Insufficient sequences or structurally invalid data.
+2026-04-21 19:30:58,265 [INFO] 
+Target: Park_2025
+2026-04-21 19:30:58,649 [INFO] [T6_B_UMD_virtual -> Park_2025] RMSE: 20.646 | Kappa: 0.010
+2026-04-21 19:30:58,649 [INFO] 
+Target: PEDAP
+2026-04-21 19:32:34,932 [INFO] [T6_B_UMD_virtual -> PEDAP] RMSE: 29.265 | Kappa: 0.710
+2026-04-21 19:32:34,932 [INFO] 
+Target: PhysioCGM
+2026-04-21 19:32:34,977 [INFO] [WARN] Skipped Mode B for PhysioCGM: Insufficient sequences or structurally invalid data.
+2026-04-21 19:32:34,978 [INFO] 
+Target: ShanghaiT1DM
+2026-04-21 19:32:34,999 [INFO] [WARN] Skipped Mode B for ShanghaiT1DM: Insufficient sequences or structurally invalid data.
+2026-04-21 19:32:34,999 [INFO] 
+Target: ShanghaiT2DM
+2026-04-21 19:32:35,139 [INFO] [WARN] Skipped Mode B for ShanghaiT2DM: Insufficient sequences or structurally invalid data.
+2026-04-21 19:32:35,140 [INFO] 
+Target: T1D-UOM
+2026-04-21 19:32:35,140 [INFO] [WARN] Skipped Mode B for T1D-UOM: Insufficient sequences or structurally invalid data.
+2026-04-21 19:32:35,140 [INFO] 
+Target: T1DEXI
+2026-04-21 19:32:35,140 [INFO] [WARN] Skipped Mode B for T1DEXI: Insufficient sequences or structurally invalid data.
+2026-04-21 19:32:35,140 [INFO] 
+Target: T1DEXIP
+2026-04-21 19:32:35,140 [INFO] [WARN] Skipped Mode B for T1DEXIP: Insufficient sequences or structurally invalid data.
+2026-04-21 19:32:35,140 [INFO] 
+Target: T1DiabetesGranada
+2026-04-21 19:32:35,140 [INFO] [WARN] Skipped Mode B for T1DiabetesGranada: Insufficient sequences or structurally invalid data.
+2026-04-21 19:32:35,141 [INFO] 
+Target: UCHTT1DM
+2026-04-21 19:32:35,353 [INFO] [T6_B_UMD_virtual -> UCHTT1DM] RMSE: 14.623 | Kappa: 0.457
+2026-04-21 19:32:35,356 [INFO] Ablation Complete. Saved to C:\Users\user\Documents\NPJ2\Glucose-ML-Project\013_Tier_6_Domain_Adaptation\tier6_results\tier6_ablation_B_results.csv
+2026-04-21 19:32:36,645 [INFO] Starting Ablation Mode: C
+2026-04-21 19:32:36,646 [INFO] 
+Target: AI-READI
+2026-04-21 19:32:36,646 [INFO] [WARN] Skipped Mode C for AI-READI: Insufficient sequences or structurally invalid data.
+2026-04-21 19:32:36,647 [INFO] 
+Target: AIDET1D

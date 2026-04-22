@@ -12,7 +12,7 @@ def run_all_ablations():
     base_dir = Path(__file__).parent
     main_script = base_dir / "main.py"
     
-    modes = ['A', 'B', 'C', 'D']
+    modes = ['C', 'D']
     
     print("=" * 60)
     print("Starting Complete Tier 6 Ablation Pipeline")

@@ -11,8 +11,10 @@ class Tier6Config:
     # 1. Directory Structure
     # ---------------------------------------------
     BASE_DIR = Path(__file__).parent.parent
-    DATA_DIR = BASE_DIR / "datasets"
+    DATA_DIR = BASE_DIR / "003_Glucose-ML-collection"
     OUT_DIR = Path(__file__).parent / "tier6_results"
+    OUT_DIR.mkdir(exist_ok=True)
+    LOG_FILE = OUT_DIR / "tier6_experiment_C_D.log"
     
     # ---------------------------------------------
     # 2. General Settings
@@ -33,7 +35,8 @@ class Tier6Config:
         'bagging_fraction': 0.8,
         'bagging_freq': 5,
         'verbose': -1,
-        'seed': 42
+        'seed': 42,
+        'n_jobs': -1
     }
     LGBM_ROUNDS = 1000
     LGBM_EARLY_STOPPING = 50
@@ -42,7 +45,8 @@ class Tier6Config:
         'objective': 'regression',
         'learning_rate': 0.01,
         'verbose': -1,
-        'seed': 42
+        'seed': 42,
+        'n_jobs': -1
     }
     LGBM_SP_ROUNDS = 500
     LGBM_SP_EARLY_STOPPING = 20

@@ -9,18 +9,41 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 import lightgbm as lgb
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_squared_error, cohen_kappa_score
+
+import logging
+from tqdm import tqdm
 
 from tier6_data_utils import load_dataset_tier6
 from tier6_transfer_utils import apply_coral, apply_tca
 from tier6_config import Tier6Config
 
-sys.path.append(str(Path(__file__).parent.parent / "012_Tier_3_Advanced_ML"))
-try:
-    from tier3_data_utils import discover_datasets, log, mape
-    from tier5_experiment_utils import calculate_kappa
-except ImportError:
-    print("Warning: Missing Tier 3 utility references.")
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    handlers=[
+        logging.FileHandler(Tier6Config.LOG_FILE, mode='a', encoding='utf-8'),
+        logging.StreamHandler()
+    ]
+)
+
+def log(msg):
+    logging.info(msg)
+
+def discover_datasets(data_root):
+    from pathlib import Path
+    try:
+        return [d for d in Path(data_root).iterdir() if d.is_dir() and not d.name.startswith('.')]
+    except Exception as e:
+        log(f"Error discovering datasets: {e}")
+        return []
+
+def calculate_kappa(y_true, y_pred):
+    # Determine direction/range: simple threshold based kappa for trend indication
+    def discretize(y):
+        return np.digitize(y, bins=[70, 180])
+    return cohen_kappa_score(discretize(y_true), discretize(y_pred))
+
     
 def train_lgb(X_train, y_train, X_val, y_val, init_model=None):
     dtrain = lgb.Dataset(X_train, label=y_train)
@@ -53,7 +76,7 @@ def execute_ablation(config):
     
     log(f"Starting Ablation Mode: {config['ablation_mode']}")
 
-    for dset_path in datasets:
+    for dset_path in tqdm(datasets, desc=f"Mode {config['ablation_mode']} Progress"):
         target_name = dset_path.name
         log(f"\nTarget: {target_name}")
 
@@ -64,6 +87,8 @@ def execute_ablation(config):
                 model = train_lgb(data['X_global_train'], data['y_train'], data['X_global_val'], data['y_val'])
                 res = evaluate(model, data['X_global_test'], data['y_test'], "T6_A_eGMI_self", target_name)
                 results.append(res)
+            else:
+                log(f"[WARN] Skipped Mode A for {target_name}: Insufficient sequences or structurally invalid data.")
                 
         elif config['ablation_mode'] == 'B':
             # Path B: UMD Virtual Features (No Local)
@@ -87,57 +112,76 @@ def execute_ablation(config):
                 kappa = calculate_kappa(data['y_test'], preds) if 'calculate_kappa' in globals() else 0.0
                 log(f"[T6_B_UMD_virtual -> {target_name}] RMSE: {rmse:.3f} | Kappa: {kappa:.3f}")
                 results.append({"rmse": rmse, "kappa": kappa, "method": "T6_B_UMD_virtual", "target": target_name})
+            else:
+                log(f"[WARN] Skipped Mode B for {target_name}: Insufficient sequences or structurally invalid data.")
                 
         elif config['ablation_mode'] == 'C':
             # Path C: CORAL Domain Alignment
             data_t = load_dataset_tier6(dset_path, use_egmi=False, use_umd_local=False)
             if data_t is not None:
                 source_X_list = []
+                source_Y_list = []
                 for s_dset in datasets:
                     if s_dset != dset_path:
                         s_data = load_dataset_tier6(s_dset, use_egmi=False, use_umd_local=False)
                         if s_data is not None:
                             source_X_list.append(s_data['X_global_train'])
+                            source_Y_list.append(s_data['y_train'])
                 
                 if len(source_X_list) > 0:
                     source_x = np.vstack(source_X_list)
+                    source_y = np.concatenate(source_Y_list)
                     # Subsample Source to 100k to prevent massive memory usage during covariance calculation
                     if len(source_x) > 100000:
                         idx = np.random.choice(len(source_x), 100000, replace=False)
                         source_x = source_x[idx]
+                        source_y = source_y[idx]
                 else:
                     source_x = data_t['X_global_train'] # fallback
+                    source_y = data_t['y_train']
                     
-                target_x = data_t['X_global_test']
+                target_x = data_t['X_global_train']
                 aligned_source = apply_coral(source_x, target_x)
-                model = train_lgb(aligned_source, data_t['y_train'], data_t['X_global_val'], data_t['y_val'])
+                model = train_lgb(aligned_source, source_y, data_t['X_global_val'], data_t['y_val'])
                 res = evaluate(model, data_t['X_global_test'], data_t['y_test'], "T6_C_CORAL_aligned", target_name)
                 results.append(res)
+            else:
+                log(f"[WARN] Skipped Mode C for {target_name}: Insufficient sequences or structurally invalid data.")
                 
         elif config['ablation_mode'] == 'D':
             # Path D: TCA Feature Extraction Projection
             data_t = load_dataset_tier6(dset_path, use_egmi=False, use_umd_local=False)
             if data_t is not None:
                 source_X_list = []
+                source_Y_list = []
                 for s_dset in datasets:
                     if s_dset != dset_path:
                         s_data = load_dataset_tier6(s_dset, use_egmi=False, use_umd_local=False)
                         if s_data is not None:
                             source_X_list.append(s_data['X_global_train'])
+                            source_Y_list.append(s_data['y_train'])
                 
                 if len(source_X_list) > 0:
                     source_x = np.vstack(source_X_list)
+                    source_y = np.concatenate(source_Y_list)
                     if len(source_x) > 100000:
                         idx = np.random.choice(len(source_x), 100000, replace=False)
                         source_x = source_x[idx]
+                        source_y = source_y[idx]
                 else:
                     source_x = data_t['X_global_train'] # fallback
+                    source_y = data_t['y_train']
                     
-                target_x = data_t['X_global_test']
-                aligned_source = apply_tca(source_x, target_x, n_components=Tier6Config.TCA_N_COMPONENTS)
-                model = train_lgb(aligned_source, data_t['y_train'], data_t['X_global_val'], data_t['y_val'])
-                res = evaluate(model, data_t['X_global_test'], data_t['y_test'], "T6_D_TCA_aligned", target_name)
+                target_x = data_t['X_global_train']
+                aligned_source, val_mapped, test_mapped = apply_tca(
+                    source_x, target_x, data_t['X_global_val'], data_t['X_global_test'],
+                    n_components=Tier6Config.TCA_N_COMPONENTS
+                )
+                model = train_lgb(aligned_source, source_y, val_mapped, data_t['y_val'])
+                res = evaluate(model, test_mapped, data_t['y_test'], "T6_D_TCA_aligned", target_name)
                 results.append(res)
+            else:
+                log(f"[WARN] Skipped Mode D for {target_name}: Insufficient sequences or structurally invalid data.")
         
     df_res = pd.DataFrame(results)
     Tier6Config.OUT_DIR.mkdir(exist_ok=True)
