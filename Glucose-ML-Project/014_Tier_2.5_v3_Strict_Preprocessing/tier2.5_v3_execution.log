@@ -1,0 +1,43 @@
+=== Tier 2.5 v3 (Final): 3-Step Prediction, Per-Rate-Group ===
+Lookback Steps   : 3
+Prediction Steps : 3
+Excluded Datasets: ['Park_2025']
+
+=== Data Extraction Complete ===
+Datasets Scanned       : 26
+Datasets Excluded      : 1 ['Park_2025']
+Files Yielding Data    : 1946
+Files Unclassified     : 1
+Range Exclusions       : 272,059
+RoC Exclusions         : 93,697
+Dropped Windows        : 1,015,589
+  [1min] subjects=90, windows=1,314,560, predicts 3 min ahead
+  [5min] subjects=1731, windows=49,867,085, predicts 15 min ahead
+  [15min] subjects=125, windows=304,310, predicts 45 min ahead
+
+=== Per-Rate-Group Training (Fixed 3-step prediction) ===
+
+  [1min] train_subj=72 (1,053,339 win) | test_subj=18 (261,221 win)
+
+  Training LightGBM [1min] (predicts 3 min ahead) ...
+  RMSE: 1.76 mg/dL  |  MAE: 0.70  |  MAPE: 0.53%
+  Top-5 Features: Velocity(1068), glucose_t-0(770), Window_Std(289), glucose_t-2(210), tod_sin(200)
+
+  [5min] train_subj=1385 (39,814,733 win) | test_subj=346 (10,052,352 win)
+
+  Training LightGBM [5min] (predicts 15 min ahead) ...
+  RMSE: 12.39 mg/dL  |  MAE: 8.48  |  MAPE: 6.96%
+  Top-5 Features: Velocity(892), glucose_t-0(578), Acceleration(415), tod_sin(253), tod_cos(249)
+
+  [15min] train_subj=100 (186,198 win) | test_subj=25 (118,112 win)
+
+  Training LightGBM [15min] (predicts 45 min ahead) ...
+  RMSE: 30.70 mg/dL  |  MAE: 21.93  |  MAPE: 15.60%
+  Top-5 Features: Velocity(621), glucose_t-0(477), Acceleration(379), tod_sin(317), tod_cos(315)
+
+=== Performance Summary ===
+Group        Pred (min)       RMSE        MAE       MAPE
+--------------------------------------------------------
+1min                  3       1.76       0.70       0.53%
+5min                 15      12.39       8.48       6.96%
+15min                45      30.70      21.93      15.60%

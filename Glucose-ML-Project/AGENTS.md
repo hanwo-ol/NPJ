@@ -10,8 +10,23 @@
 - 사용자에게 답변을 할 때에는 이모지 사용 금지.
 
 # 설계 규칙
-- 실험의 Tier가 바뀔 때에는 nnn_Tier_n.n_0000 형식의 폴더 명을 통해 티어를 구분짓도록 한다.
+- 실험의 Tier가 바뀌는 시에는 nnn_Tier_n.n_0000 형식의 폴더 명을 통해 티어를 구분짓도록 한다.
 - 티어 별 실험 결과는 각 폴더에 구분지어 저장되도록 한다.
+- 모든 Tier의 Config 클래스는 프로젝트 루트의 `global_config.py`의 `GlobalConfig`를 상속한다. Tier-specific 값(예: 출력 경로, 그룹 정의)만 각 Tier Config에서 재정의한다. `LOOKBACK_STEPS`, `PREDICTION_STEPS`, `TRAIN_RATIO`, `SEED` 등 공통 파라미터는 각 Tier Config에서 별도로 정의하지 않는다.
+
+## 데이터 전처리 규칙
+- [C:\Users\user\Documents\NPJ2\Glucose-ML-Project\999_Preprocessing_Rules.md]를 참조하여 데이터 전처리 규칙을 적용하도록 한다.
+
+## 데이터 로딩 규칙
+- **단일 진실 원천 원칙 (Single Source of Truth):** 각 데이터셋의 혈당 시계열 원본은 반드시 한 곳의 지정된 폴더에서만 로드한다. 한 데이터셋 폴더 내에 원본, 파생(time-augmented), 확장(extended) 등 여러 버전의 폴더가 공존할 경우, Config에 우선순위를 명시하여 중복 로드를 방지한다.
+  - 권장 우선순위: `extracted-glucose-files` > `time-augmented` > raw 파일 순서.
+  - 폴더 전체를 `rglob`으로 순회하는 방식은 이중 계산 위험이 있으므로 사용하지 않는다.
+- **제외 데이터셋 관리:** 파이프라인에서 제외할 데이터셋은 Config의 `EXCLUDED_DATASETS` 리스트로 관리한다. 파이프라인 실행 첫 단계에서 이 리스트를 확인하고 해당 데이터셋을 건너뛴다. 코드 내 조건문으로 하드코딩하지 않는다.
+
+## 샘플링 주기 혼합 규칙
+- 샘플링 주기가 다른 데이터셋을 함께 사용할 경우, 주기별 그룹으로 분리하여 각 그룹마다 별도 모델을 학습하고 평가한다.
+- 서로 다른 주기의 데이터를 동일 모델에 직접 혼합하지 않는다. 피처 차원 불일치 또는 태스크 정의 불일치가 발생한다.
+
 
 # 코딩 규칙
 - main에는 구동부 및 argparse외에는 정의하지 않아야 한다.

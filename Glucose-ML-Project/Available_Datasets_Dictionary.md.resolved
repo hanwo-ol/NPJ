@@ -1,0 +1,50 @@
+# Available Datasets Dictionary
+
+본 문서는 `003_Glucose-ML-collection` 디렉터리에 물리적으로 CSV 데이터 파일이 존재하는 **20개의 유효 데이터셋**을 정리한 데이터 사전(Data Dictionary)입니다. 각 데이터셋 별로 타겟 혈당(Target Glucose)을 지칭하는 원본 컬럼명과 그 의미를 명시합니다.
+
+## 1. 물리적 데이터 부재 현황 (Empty Datasets)
+전체 26개 데이터셋 중 아래 6개 데이터셋은 다운로드 된 CSV 파일이 없으며 `README.md`만 존재하는 **빈 폴더**입니다. 따라서 파이프라인에서 자동으로 제외됩니다.
+- `AI-READI`, `DiaTrend`, `OhioT1DM`, `T1DEXI`, `T1DEXIP`, `T1DiabetesGranada`
+
+---
+
+## 2. 유효 데이터셋 및 타겟 혈당 컬럼 매핑 (Available Datasets)
+실제 데이터가 존재하는 20개 데이터셋의 메타데이터 및 헤더를 전역 스캔하여 도출한 혈당 컬럼 명칭과 설명입니다. 향후 파이프라인(Tier 2.5 v3)의 데이터 로더는 아래의 명칭들을 탐색하여 정답지(Label) 및 피처로 활용해야 합니다.
+
+| 데이터셋 (Dataset) | 타겟 혈당 컬럼명 (Target Glucose Column) | 의미 및 비고 (Definition & Notes) |
+| :--- | :--- | :--- |
+| **Bris-T1D_Open** | `glucose_value_mg_dl` | 표준화된 연속혈당(CGM) 측정 수치 (단위: mg/dL). |
+| **Colas_2019** | `glucose_value_mg_dl` | 〃 |
+| **D1NAMO** | `glucose_value_mg_dl` | 〃 |
+| **HUPA-UCM** | `glucose_value_mg_dl` | 〃 |
+| **Hall_2018** | `glucose_value_mg_dl` | 〃 |
+| **Park_2025** | `glucose_value_mg_dl` | 〃 |
+| **PhysioCGM** | `glucose_value_mg_dl` | 〃 |
+| **T1D-UOM** | `glucose_value_mg_dl` | 〃 |
+| **CGMacros_Dexcom** | `glucose_value_mg_dl` / `Libre GL` | Dexcom 기기의 표준 측정치 및 보조 Libre 수치 혼재. |
+| **CGMacros_Libre** | `glucose_value_mg_dl` / `Dexcom GL` | Libre 기기의 표준 측정치 및 보조 Dexcom 수치 혼재. |
+| **BIGIDEAs** | `glucose_value_mg_dl` | `extracted-glucose-files/` 폴더 내 시계열 CSV 기준. metadata CSV의 `average_glucose_level_mg_dl`은 집계 통계값이므로 타겟으로 부적합. |
+| **AIDET1D** | `GlucValue` | 원본 기기(Device) 출력물에서 추출된 Raw 혈당 측정값 (단위: mg/dL). |
+| **CGMND** | `Value` | 센서에서 기록된 원본 측정치 (단위: mg/dL). |
+| **GLAM** | `Value` | 〃 |
+| **IOBP2** | `Value` | 〃 |
+| **AZT1D** | `CGM` | 연속혈당측정기(CGM)의 직접적인 센서 리딩값. |
+| **PEDAP** | `CGM` | 〃 |
+| **UCHTT1DM** | `glucose_value_mg_dl` | `extracted-glucose-files/` 및 `time-augmented/` 폴더 내 혈당 시계열 파일 기준. `extended-features/` 폴더는 보조 데이터(탄수화물, 심박수 등)만 포함. |
+| **ShanghaiT1DM** | `CGM (mg / dl)` / `CBG (mg / dl)` | 상하이 코호트 T1DM 데이터. CGM 수치와 모세혈관 혈당(CBG, Fingerstick) 혼재. |
+| **ShanghaiT2DM** | `CGM (mg / dl)` | 상하이 코호트 T2DM 데이터. `CBG (mg / dl)` 컬럼은 전수 NaN이며, 유효 데이터는 `CGM (mg / dl)` 컬럼에 존재. |
+
+---
+
+## 3. 컬럼명 동적 매핑 전략 (Dynamic Mapping Strategy)
+이전 파이프라인에서 14개의 데이터셋이 대규모로 스킵(Skip) 되었던 주된 원인은 파서가 오직 `glucose_value_mg_dl` 이름 하나만을 찾도록 하드코딩 되어 있었기 때문입니다. 
+
+위 분석에 따라 파이프라인 로더는 다음의 **순서 보장 배열(Priority Array)** 을 기반으로 데이터프레임을 스캔하여 타겟 혈당을 매핑해야 합니다:
+
+1. `glucose_value_mg_dl` (가장 보편적인 표준 포맷)
+2. `CGM` (직관적인 포맷)
+3. `Value` (특정 기기 Raw 포맷)
+4. `GlucValue` (특정 기기 Raw 포맷)
+5. `CGM (mg / dl)` (상하이 코호트 포맷)
+6. `CBG (mg / dl)` (상하이 코호트 포맷)
+7. `average_glucose_level_mg_dl` (집계 포맷)
