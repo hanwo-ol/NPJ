@@ -112,15 +112,18 @@ GlobalConfig 상속. 아래 항목만 추가로 정의한다.
 
 GlobalConfig 상속으로 전환 예정. 현재 파일(`tier3_data_utils.py`)에 하드코딩된 아래 값들은 GlobalConfig 값으로 대체한다.
 
-| 현재 값 | 대체 변수 | 현재 파일 위치 |
-|---|---|---|
-| `n_back=6` | `GlobalConfig.LOOKBACK_STEPS` (= 3) | `tier3_data_utils.py:145` |
-| `n_fwd=6` | `GlobalConfig.PREDICTION_STEPS` (= 3) | `tier3_data_utils.py:145` |
-| `train_ratio=0.8` | `GlobalConfig.TRAIN_RATIO` (= 0.70) | `tier3_data_utils.py:269` |
-| `seed=42` | `GlobalConfig.SEED` | 각 스크립트 |
-| `N_JOBS=16` | `GlobalConfig.N_JOBS` (= -1) | `01_baseline_boosting.py:37` |
-| `fillna(0)` | 제거 (보간 금지 Rule 3) | `tier3_data_utils.py:162,308` |
-| `ffill()` | 제거 (보간 금지 Rule 3) | `tier3_data_utils.py:169` |
+| 현재 변수명 | 현재 값 | 대체 변수 | 현재 파일 위치 |
+|---|---|---|---|
+| `n_back=6` | `GlobalConfig.LOOKBACK_STEPS` (= 3) | - | `tier3_data_utils.py:145` |
+| `n_fwd=6` | `GlobalConfig.PREDICTION_STEPS` (= 3) | - | `tier3_data_utils.py:145` |
+| `train_ratio=0.8` | `GlobalConfig.TRAIN_RATIO` (= 0.70) | - | `tier3_data_utils.py:269` |
+| `seed=42` | `GlobalConfig.SEED` | - | 각 스크립트 |
+| `N_JOBS=16` | `GlobalConfig.N_JOBS` (= -1) | - | `01_baseline_boosting.py:37` |
+
+> `fillna(0)` (`tier3_data_utils.py:162, 308`)와 `ffill()` (`tier3_data_utils.py:169`)은
+> 인슐린·식사량 등 이벤트형 공변량 컬럼에만 적용된다.
+> 이벤트 부재(= 0)는 물리적으로 올바른 처리이며, 혈당 보간 금지 규칙(Rule 3)의 적용 대상이 아니다.
+> 해당 호출은 유지한다.
 
 **Tier 5 전용 추가 변수**
 

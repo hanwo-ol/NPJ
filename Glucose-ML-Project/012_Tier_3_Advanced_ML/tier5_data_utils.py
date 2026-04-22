@@ -13,6 +13,9 @@ Usage:
 import numpy as np
 import pandas as pd
 from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from global_config import GlobalConfig
 from tier3_data_utils import (
     discover_datasets, log, mape, downcast_to_float32,
     build_windows_with_features
@@ -118,7 +121,10 @@ def load_metadata(dset_path):
 # 3. Tier 5 Dataset Loader
 # ══════════════════════════════════════════════════════
 
-def load_dataset_tier5(dset_path, seed=42, train_ratio=0.7, val_ratio=0.15,
+def load_dataset_tier5(dset_path,
+                       seed=GlobalConfig.SEED,
+                       train_ratio=GlobalConfig.TRAIN_RATIO,
+                       val_ratio=GlobalConfig.VAL_RATIO,
                        include_local=True):
     """
     Load dataset with:

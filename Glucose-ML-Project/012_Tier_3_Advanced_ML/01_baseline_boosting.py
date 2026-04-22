@@ -26,7 +26,7 @@ import catboost as cb
 
 from tier3_data_utils import (
     discover_datasets, load_dataset, extract_top_features,
-    mape, log, downcast_to_float32
+    mape, log, downcast_to_float32, GlobalConfig
 )
 
 
@@ -34,7 +34,7 @@ from tier3_data_utils import (
 # Baseline Hyperparameters (Optuna 튜닝 전 기본값)
 # ═══════════════════════════════════════════════════
 
-N_JOBS = 16  # 20 스레드 중 16개 사용 (OS 여유 확보)
+N_JOBS = GlobalConfig.N_JOBS
 
 XGB_PARAMS = {
     'n_estimators': 300,
@@ -44,7 +44,7 @@ XGB_PARAMS = {
     'colsample_bytree': 0.8,
     'tree_method': 'hist',
     'n_jobs': N_JOBS,
-    'random_state': 42,
+    'random_state': GlobalConfig.SEED,
     'verbosity': 0,
 }
 
@@ -56,7 +56,7 @@ LGBM_PARAMS = {
     'subsample': 0.8,
     'colsample_bytree': 0.8,
     'n_jobs': N_JOBS,
-    'random_state': 42,
+    'random_state': GlobalConfig.SEED,
     'verbose': -1,
 }
 
@@ -65,7 +65,7 @@ CATBOOST_PARAMS = {
     'depth': 8,
     'learning_rate': 0.1,
     'thread_count': N_JOBS,
-    'random_seed': 42,
+    'random_seed': GlobalConfig.SEED,
     'verbose': 0,
 }
 

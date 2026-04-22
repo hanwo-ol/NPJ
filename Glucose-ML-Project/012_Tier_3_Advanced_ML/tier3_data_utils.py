@@ -12,8 +12,12 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 from tqdm import tqdm
+import sys
 import warnings
 warnings.filterwarnings('ignore')
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from global_config import GlobalConfig
 
 
 # ═══════════════════════════════════════════════════
@@ -142,7 +146,9 @@ def get_numeric_cols(p_files, sample_n=10):
     return ['glucose_value_mg_dl'] + numeric_cols
 
 
-def build_windows_with_features(df, feature_cols, n_back=6, n_fwd=6):
+def build_windows_with_features(df, feature_cols,
+                                n_back=GlobalConfig.LOOKBACK_STEPS,
+                                n_fwd=GlobalConfig.PREDICTION_STEPS):
     """
     Tier 2.5_v2 완전 동일 윈도우 빌더.
     - 이벤트 decay + time_since + 핵심 공변량 multi-frequency sin/cos 임베딩
@@ -266,7 +272,7 @@ def discover_datasets(data_root=None):
     return datasets
 
 
-def load_dataset(dset_path, train_ratio=0.8):
+def load_dataset(dset_path, train_ratio=GlobalConfig.TRAIN_RATIO):
     """
     단일 데이터셋을 로드하여 train/test 분할까지 수행.
 

@@ -181,7 +181,7 @@ def load_dataset_tier6(dset_path, use_egmi=False, use_umd_local=False):
     patient_ids = np.array(patient_ids)
 
     unique_pids = np.unique(patient_ids)
-    rng = np.random.RandomState(Tier6Config.RANDOM_SEED)
+    rng = np.random.RandomState(Tier6Config.SEED)
     rng.shuffle(unique_pids)
     
     n_train = int(len(unique_pids) * Tier6Config.TRAIN_RATIO)
