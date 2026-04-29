@@ -143,6 +143,10 @@ def run_group(group_name: str, target_ds: str,
         logger.info(f"  [SKIP] No test data for {target_ds}")
         return pd.DataFrame()
 
+    # 예측값 저장 디렉터리 (단계 1 임상 분석용)
+    pred_dir = Tier7Config.OUT_DIR / "predictions" / target_ds
+    pred_dir.mkdir(parents=True, exist_ok=True)
+
     logger.info(f"  Source: {len(Xs):,} | Train: {len(X_tr):,} | Test: {len(X_te):,}")
     results = []
 
@@ -174,8 +178,9 @@ def run_group(group_name: str, target_ds: str,
             model_cache[name] = future.result()
 
     for label in ['source_only', 'target_only', 'mixed']:
-        results.append(evaluate(y_te, model_cache[label].predict(X_te),
-                                label, logger))
+        preds = model_cache[label].predict(X_te)
+        results.append(evaluate(y_te, preds, label, logger))
+        np.savez(pred_dir / f"{label}.npz", y_true=y_te, y_pred=preds)
 
     # ── 4. CORAL ─────────────────────────────────────────────────────────────
     logger.info("  [4/6] CORAL alignment...")
@@ -183,14 +188,18 @@ def run_group(group_name: str, target_ds: str,
     m_coral = train_lgbm(np.vstack([Xs_c, X_tr]),
                          np.concatenate([ys, y_tr]),
                          X_val, y_val)
-    results.append(evaluate(y_te, m_coral.predict(X_te), 'coral', logger))
+    preds_coral = m_coral.predict(X_te)
+    results.append(evaluate(y_te, preds_coral, 'coral', logger))
+    np.savez(pred_dir / "coral.npz", y_true=y_te, y_pred=preds_coral)
 
     # ── 5. TrAdaBoost ────────────────────────────────────────────────────────
     logger.info(f"  [5/6] TrAdaBoost ({Tier7Config.TRADABOOST_N_ITER} iterations)...")
     tada = TrAdaBoostRegressor()
     # TrAdaBoostRegressor.fit() 내부에서 tqdm 진행 표시 적용 (아래에서 수정)
     tada.fit(Xs, ys, X_tr, y_tr, X_val, y_val)
-    results.append(evaluate(y_te, tada.predict(X_te), 'tradaboost', logger))
+    preds_tada = tada.predict(X_te)
+    results.append(evaluate(y_te, preds_tada, 'tradaboost', logger))
+    np.savez(pred_dir / "tradaboost.npz", y_true=y_te, y_pred=preds_tada)
 
     # ── 6. Oracle (병렬 10-fold) ──────────────────────────────────────────────
     logger.info("  [6/6] Oracle 10-fold CV (parallel)...")
