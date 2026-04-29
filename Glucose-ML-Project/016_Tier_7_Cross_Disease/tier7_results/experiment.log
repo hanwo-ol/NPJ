@@ -95,3 +95,33 @@ Saved: 5way_all_targets.csv
  5min Colas_2019      oracle  9.389865  5.957272  5.953083
 10:57:13    Saved: 5way_CITY.png
 10:57:13    Saved: 5way_Colas_2019.png
+12:08:30  
+==========================================================
+12:08:30    Group [15min]  Target: ShanghaiT2DM
+12:08:30  ==========================================================
+12:09:26    Source: 862,905 | Train: 72,058 | Test: 19,932
+12:09:26  
+  [1-3/6] Source-Only / Target-Only / Mixed  (parallel)...
+12:09:34    [source_only    ]  RMSE=20.93  MAE=14.48  MARD=10.6%
+12:09:34    [target_only    ]  RMSE=19.75  MAE=13.77  MARD=10.2%
+12:09:34    [mixed          ]  RMSE=20.62  MAE=14.26  MARD=10.5%
+12:09:34    [4/6] CORAL alignment...
+12:09:41    [coral          ]  RMSE=19.74  MAE=13.77  MARD=10.2%
+12:09:41    [5/6] TrAdaBoost (20 iterations)...
+12:10:55    [tradaboost     ]  RMSE=19.78  MAE=13.66  MARD=10.0%
+12:10:55    [6/6] Oracle 10-fold CV (parallel)...
+12:11:03    [oracle         ]  RMSE=19.29  MAE=13.47  MARD=10.0%
+12:11:03  
+Saved: 5way_all_targets.csv
+12:11:03  group       target       model      rmse       mae      mard
+15min ShanghaiT2DM source_only 20.929021 14.482798 10.627379
+15min ShanghaiT2DM target_only 19.746564 13.771164 10.178715
+15min ShanghaiT2DM       mixed 20.616890 14.258376 10.464524
+15min ShanghaiT2DM       coral 19.736464 13.771034 10.183959
+15min ShanghaiT2DM  tradaboost 19.777379 13.663586 10.030724
+15min ShanghaiT2DM      oracle 19.291530 13.471267  9.962868
+12:11:03    Saved: 5way_ShanghaiT2DM.png
+12:11:03  
+==========================================================
+12:11:03    Group [5min]  Target: CITY
+12:11:03  ==========================================================
