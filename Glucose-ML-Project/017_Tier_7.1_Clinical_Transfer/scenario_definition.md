@@ -164,3 +164,4 @@ Tier 7 결과만으로는 답할 수 없는 3가지 질문을 추가로 조사�
 | **0. 시나리오 정의** | 왜 이 연구가 필요한가 (본 문서) | scenario_definition.md |
 | **1. Tier 7 결과** | 5-way 비교, negative transfer 확인 | Tier7_Results_Analysis.md |
 | **2. Tier 7.1 분석** | 임상 안전성, 원인 분석, Cold Start | analysis_guide.md |
+| **3. 최종 결론 및 로드맵** | 한계 진단 및 Tier 7.2 (멀티모달) 실험 계획 | Tier7.1_Conclusions_and_Next_Steps.md |
