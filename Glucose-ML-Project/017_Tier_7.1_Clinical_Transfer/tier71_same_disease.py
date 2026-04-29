@@ -210,6 +210,7 @@ def run_same_disease_experiment():
     # 결과 저장
     df = pd.DataFrame(results)
     df.insert(0, 'target', ds_name)
+    df.insert(0, 'group', '15min')
     df.insert(0, 'experiment', 'intra_T2D')
     df.to_csv(out_dir / "5way_intra_T2D.csv", index=False, encoding='utf-8-sig')
     print(f"\nSaved: {out_dir / '5way_intra_T2D.csv'}")

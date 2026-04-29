@@ -66,12 +66,12 @@ CGM 기반 혈당 예측 연구에서 CGM 측정값을 Clarke Grid의 reference�
 
 ## 분석 TODO
 
-- [ ] 1. 단계 0 검증: y_pred 저장 정합성 확인
-- [ ] 2. 단계 1 분석: Clarke Error Grid 해석
-- [ ] 3. 단계 1 분석: 저혈당 구간 안전성 판단
-- [ ] 4. 단계 1 분석: 구간별 RMSE 패턴 확인
-- [ ] 5. 단계 2 분석: 동일 질병 전이 핵심 가설 판별
-- [ ] 6. 단계 3 분석: Cold Start 교차점 확인
+- [x] 1. 단계 0 검증: y_pred 저장 정합성 확인
+- [x] 2. 단계 1 분석: Clarke Error Grid 해석
+- [x] 3. 단계 1 분석: 저혈당 구간 안전성 판단
+- [x] 4. 단계 1 분석: 구간별 RMSE 패턴 확인
+- [x] 5. 단계 2 분석: 동일 질병 전이 핵심 가설 판별
+- [ ] 6. 단계 3 분석: Cold Start 교차점 확인 (실행 중)
 - [ ] 7. 단계 3 분석: 도메인 갭별 Cold Start 패턴 비교
 - [ ] 8. 종합: 3개 단계 결과를 연결한 최종 결론 도출
 - [ ] 9. Tier7.1_Results_Analysis.md 보고서 작성
@@ -94,9 +94,11 @@ CGM 기반 혈당 예측 연구에서 CGM 측정값을 Clarke Grid의 reference�
 
 ### Clarke Error Grid란?
 
-Clarke Error Grid는 혈당 예측(또는 측정) 장치의 **임상적 안전성**을 평가하는 표준 도구이다.
-1987년 Clarke 등이 제안하였으며, 현재까지 CGM 기기와 혈당 예측 모델의 FDA 인허가 및 논문 심사에서
-사실상 표준으로 사용된다.
+Clarke Error Grid는 혈당 예측(또는 측정) 장치의 **임상적 안전성**을 평가하는 도구이다.
+1987년 Clarke 등이 제안하였으며, 이후 혈당 예측 연구 문헌에서 임상 정확도 평가에 널리 사용되고 있다.
+단, FDA는 혈당 측정 기기 인허가에 Clarke Grid를 명시적으로 요구하지 않으며,
+자체 정확도 기준(reference 대비 오차 범위 %)을 사용한다.
+Clarke Grid의 위상은 "규제 요건"이 아닌 **"학술 연구의 사실상 표준(de facto standard)"**이다.
 
 이 방법은 "예측 오차의 크기"가 아니라 "예측 오차가 의사의 판단을 어떻게 바꾸는가"를 기준으로 평가한다.
 예를 들어, 실제 혈당이 200 mg/dL인 환자에게 AI가 210으로 예측하면 오차는 있지만 의사의 치료 결정은 동일하다 (Zone A).
@@ -162,20 +164,39 @@ Clarke Grid는 그 오차가 **환자에게 해를 끼치는가**를 보여준�
 | A+B | 임상적으로 안전 | >= 99% 면 안전, < 95% 면 위험 |
 | C+D+E | 위험한 오류 | < 1% 면 안전, > 5% 면 심각 |
 
-### 분석 질문
+### 실험 결과: Clarke Zone A (%)
+
+| model | CITY | Colas_2019 | ShanghaiT2DM |
+|---|---|---|---|
+| source_only | 95.51 | **68.35** | 85.37 |
+| target_only | 95.83 | 93.63 | 86.51 |
+| mixed | 95.79 | 91.24 | 85.75 |
+| coral | 95.81 | 92.57 | 86.57 |
+| tradaboost | **95.88** | 93.14 | **86.89** |
+
+### 실험 결과: Clarke Zone C+D+E (%)
+
+| model | CITY | Colas_2019 | ShanghaiT2DM |
+|---|---|---|---|
+| source_only | 2.49 | **6.28** | 4.84 |
+| target_only | 2.25 | 3.23 | 4.16 |
+| tradaboost | 2.23 | 3.57 | 4.18 |
+
+### 분석 질문과 해석
 
 **Q1. 모델 간 Zone A 차이가 유의미한가?**
-- `target_only`와 `tradaboost`의 Zone A 차이가 1%p 이상이면 유의미
-- `source_only`의 Zone A가 다른 모델보다 5%p 이상 낮으면 cross-disease 위험 확인
+- 기준: 1%p 이상이면 유의미
+- 결과: CITY에서는 모델 간 차이 0.4%p 이내 (유의미하지 않음)
+- Colas_2019에서 source_only(68.35%) vs target_only(93.63%) = **25.3%p 차이** (극단적)
+- ShanghaiT2DM에서 tradaboost(86.89%)가 target_only(86.51%) 대비 0.38%p 개선 (미미)
 
 **Q2. Colas_2019에서 source_only의 Zone C+D+E 비율은?**
-- Tier 7에서 MARD 19%였으므로 Zone C+D+E가 높을 것으로 예상
-- 이 수치가 구체적으로 몇 %인지가 "T1D 모델을 건강인에 적용하면 위험하다"의 정량적 근거
+- 결과: **6.28%** (5% 초과 = 심각 기준 해당)
+- 해석: T1D 모델을 건강인에 적용하면 약 16건 중 1건이 위험한 임상 판단을 유발
 
 **Q3. CORAL/TrAdaBoost가 Zone A를 개선하는가?**
-- `mixed` 대비 `coral`/`tradaboost`의 Zone A 증가 여부
-- 증가하면: 전이 기법이 임상 안전성도 개선
-- 불변이면: RMSE 개선이 임상적으로는 무의미
+- mixed(91.24%) 대비 coral(92.57%) +1.3%p, tradaboost(93.14%) +1.9%p
+- 해석: 전이 기법이 임상 안전성도 개선한다. 특히 Colas_2019에서 효과가 뚜렷함
 
 ---
 
@@ -229,6 +250,24 @@ AI 혈당 예측 모델의 핵심 가치 중 하나는 저혈당을 **사전에 
 - Colas_2019에서 sensitivity < 0.30이면: T1D 모델이 건강인의 저혈당을 구조적으로 놓침
 - 건강인의 저혈당 패턴(서서히 하강)이 T1D(급격 하강)와 다르기 때문
 
+### 실험 결과: 저혈당 Sensitivity
+
+| model | CITY | Colas_2019 | ShanghaiT2DM |
+|---|---|---|---|
+| source_only | 0.608 | **0.151** | 0.214 |
+| target_only | 0.696 | 0.603 | 0.194 |
+| mixed | 0.678 | 0.336 | 0.222 |
+| coral | 0.696 | 0.508 | 0.227 |
+| tradaboost | **0.701** | 0.551 | **0.240** |
+
+### 해석
+
+- **Q4 답변:** tradaboost가 CITY(0.701), ShanghaiT2DM(0.240)에서 target_only 이상. 저혈당 sensitivity를 악화시키지 않음.
+  단, Colas_2019에서 tradaboost(0.551) < target_only(0.603). 전이학습이 저혈당 감지를 일부 악화.
+- **Q5 답변:** Colas_2019에서 source_only sensitivity = **0.151** (0.30 미만). T1D 모델은 건강인 저혈당의 85%를 놓침.
+- **전체적으로 모든 모델의 sensitivity가 0.80 미만.** 어떤 모델도 저혈당 감지에 충분하지 않음.
+  ShanghaiT2DM은 특히 심각 (최대 0.240). 저혈당 이벤트가 392건으로 극히 적어 학습이 어려운 것이 원인.
+
 ---
 
 ## 4. 단계 1 — 구간별 RMSE
@@ -264,6 +303,23 @@ Clarke Error Grid가 구간별 임상 위험을 이미 반영하므로,
 **Q7. source_only의 구간별 RMSE 패턴은?**
 - <70 구간의 RMSE가 비정상적으로 높으면: T1D 모델이 저혈당 패턴을 잘못 학습
 - >250 구간의 RMSE가 낮으면: T1D 모델이 고혈당은 잘 예측 (T1D 특성상 고혈당 데이터 풍부)
+
+### 실험 결과: 구간별 RMSE (mg/dL)
+
+**Colas_2019** (도메인 갭 최대, 건강인):
+
+| model | <70 | 70-180 | 180-250 | >250 |
+|---|---|---|---|---|
+| source_only | **41.59** | **21.46** | 58.01 | 113.56 |
+| target_only | 15.71 | 9.67 | 63.48 | 124.53 |
+| tradaboost | 19.34 | 9.87 | 55.41 | 99.45 |
+
+### 해석
+
+- **Q6 답변:** Colas_2019에서 tradaboost의 70-180 RMSE(9.87)는 target_only(9.67) 대비 약간 악화.
+  반면 <70 구간에서 tradaboost(19.34) vs target_only(15.71) = 3.6 악화. 저혈당 구간에서 전이학습 손실 확인.
+- **Q7 답변:** Colas_2019 source_only의 <70 RMSE = 41.59 (target_only의 2.6배). T1D 모델이 건강인 저혈당 패턴을 심각하게 오예측.
+  >250 구간은 샘플 9건으로 해석 불가.
 
 ---
 
@@ -308,6 +364,28 @@ Wang et al.의 divergence factor 분석과 일치한다.
 - cross: source_only MARD 10.6% (T1D->T2D)
 - intra: source_only MARD ? (T2D->T2D)
 - 차이가 도메인 갭의 질병 유형 기여분
+
+### 실험 결과: Same-Disease Transfer (T2D->T2D)
+
+| model | RMSE | MAE | MARD | beats_target_only |
+|---|---|---|---|---|
+| source_only | 19.21 | 13.90 | 12.3% | False |
+| target_only | 19.04 | 13.65 | 12.0% | - |
+| mixed | 18.84 | 13.53 | 11.8% | **True** |
+| coral | 18.93 | 13.58 | 12.0% | **True** |
+| tradaboost | **18.67** | **13.25** | **11.3%** | **True** |
+
+### 해석
+
+- **Q8 답변:** mixed(18.84) < target_only(19.04). 같은 질병에서는 negative transfer가 발생하지 않는다.
+  cross-disease(T1D->T2D)에서 mixed(20.62) > target_only(19.75)이었으므로,
+  cross-disease의 negative transfer는 **질병 유형 차이(도메인 갭)가 원인**이다.
+- **Q9 답변:** intra source_only MARD = 12.3%, cross source_only MARD = 10.6%.
+  intra가 오히려 높은 이유: 50명으로 학습(cross는 862K windows)하여 데이터 양 차이가 크다.
+  동일 조건 비교가 아니므로 직접 비교에 주의 필요.
+- **핵심 발견:** 동일 질병에서 mixed, coral, tradaboost **모두** target_only를 초과.
+  이는 **"전이 기법이 target_only를 넘을 수 있는 조건이 존재한다"**는 것을 입증한다.
+  Tier 7에서 못 넘은 것은 기법 한계가 아니라 **도메인 갭 때문**이었다.
 
 ---
 
