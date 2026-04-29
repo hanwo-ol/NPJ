@@ -163,25 +163,70 @@ def load_dataset(ds_name: str, max_patients: int = None) -> tuple:
 
 # ─── 그룹별 소스 풀 / 타겟 분할 ──────────────────────────────────────────────
 
+def _proportional_sample(X: np.ndarray, y: np.ndarray,
+                          n_target: int, seed: int) -> tuple:
+    """
+    데이터셋 내에서 n_target개의 window를 균등 샘플링한다.
+
+    시계열 무결성 보장 근거:
+      - 각 window는 이미 [lookback + target] 구간을 포함한 완결된 세그먼트
+      - window 간 순서 샘플링은 window 내부 시계열 구조에 영향을 주지 않음
+      - 소스 풀은 예측 대상이 아니므로 window 간 데이터 누출 위험 없음
+      (Rule 5의 shuffle 금지는 동일 환자의 train/test split에 적용되는 규칙)
+    """
+    rng = np.random.default_rng(seed)
+    idx = rng.choice(len(X), size=n_target, replace=False)
+    return X[idx], y[idx]
+
+
 def load_source_pool(group_name: str) -> tuple:
     """
     지정 그룹의 소스(T1D) 데이터셋 전체를 로딩하여 합산 반환.
+
+    MAX_SOURCE_WINDOWS가 설정된 경우, 각 데이터셋이 전체에서 차지하는
+    비율에 따라 window를 할당하여 서브샘플링한다 (데이터셋 비례 샘플링).
+    이를 통해 집단 다양성을 유지하면서 학습 속도를 향상시킨다.
     """
     _, source_defs, _ = Tier7Config.EXPERIMENT_GROUPS[group_name]
     log(f"Loading source pool [{group_name}]...")
-    X_all, y_all = [], []
+
+    # Step 1: 전체 로딩
+    ds_arrays = {}
     for ds_name in source_defs:
         X, y = load_dataset(ds_name)
         if X is not None:
-            X_all.append(X)
-            y_all.append(y)
+            ds_arrays[ds_name] = (X, y)
             log(f"  {ds_name}: {len(X):,} windows")
-    if not X_all:
+
+    if not ds_arrays:
         raise RuntimeError(f"No source data for group '{group_name}'")
-    Xs = np.vstack(X_all)
-    ys = np.concatenate(y_all)
-    log(f"  Total source [{group_name}]: {len(Xs):,} windows")
+
+    total_raw = sum(len(X) for X, _ in ds_arrays.values())
+    log(f"  Total source [{group_name}]: {total_raw:,} windows (before sampling)")
+
+    # Step 2: 서브샘플링 (MAX_SOURCE_WINDOWS 설정 시)
+    cap = Tier7Config.MAX_SOURCE_WINDOWS
+    if cap is not None and total_raw > cap:
+        log(f"  Subsampling to {cap:,} windows (ratio={cap/total_raw:.2%})...")
+        sampled = []
+        for ds_name, (X, y) in ds_arrays.items():
+            # 각 데이터셋의 비례 할당량
+            n_alloc = max(1, int(cap * len(X) / total_raw))
+            Xs_sub, ys_sub = _proportional_sample(
+                X, y, min(n_alloc, len(X)),
+                seed=Tier7Config.SOURCE_SAMPLE_SEED
+            )
+            sampled.append((Xs_sub, ys_sub))
+            log(f"    {ds_name}: {len(X):,} → {len(Xs_sub):,}")
+        Xs = np.vstack([s[0] for s in sampled])
+        ys = np.concatenate([s[1] for s in sampled])
+        log(f"  Sampled source total: {len(Xs):,} windows")
+    else:
+        Xs = np.vstack([X for X, _ in ds_arrays.values()])
+        ys = np.concatenate([y for _, y in ds_arrays.values()])
+
     return Xs, ys
+
 
 
 def load_target_split(ds_name: str) -> dict:
