@@ -116,7 +116,7 @@ Glucose-ML 논문은 각 데이터셋을 해당 CGM 센서의 고유 샘플링 �
 | Source | PEDAP | T1D | 103 | 7,183,125 |
 | **Source 합계** | | | **1,450** | **55,602,060** |
 | Target | **CITY** | **Mixed** (T1D/T2D/ND) | **153** | **3,664,643** |
-| Target | **Colas_2019** | **Mixed** (ND→T2D 위험군) | **208** | **113,213** |
+| Target | **Colas_2019** | **Mixed** (건강인~전당뇨 종단) | **208** | **113,213** |
 
 5분 그룹의 소스 풀(5,560만 windows)은 비례 서브샘플링(1,000,000 windows)으로 축소하여 학습 속도를 확보하였다.
 각 데이터셋이 전체에서 차지하는 비율에 따라 할당량을 배분하여 집단 다양성을 유지하였다.
@@ -156,7 +156,7 @@ Glucose-ML 논문은 혈당(G) 외에 설문(Q: HbA1c, 나이, BMI 등)과 의�
 
 ### 3.1 전체 결과 요약
 
-| 모델 | ShanghaiT2DM (T2D) | CITY (Mixed) | Colas_2019 (ND→T2D) |
+| 모델 | ShanghaiT2DM (T2D) | CITY (Mixed) | Colas_2019 (Mixed: 건강인~전당뇨) |
 |---|---|---|---|
 | | RMSE / MAE / MARD | RMSE / MAE / MARD | RMSE / MAE / MARD |
 | source_only | 20.93 / 14.48 / 10.6% | 16.02 / 10.04 / 6.0% | **23.78** / 16.95 / **19.0%** |
@@ -176,7 +176,7 @@ Glucose-ML 논문은 혈당(G) 외에 설문(Q: HbA1c, 나이, BMI 등)과 의�
 
 ![CITY 5-way 비교](C:/Users/user/.gemini/antigravity/brain/38f5efed-7107-47fb-867f-a92bf1cf0b32/5way_CITY.png)
 
-#### Colas_2019 (ND→T2D 위험군, 5분 주기)
+#### Colas_2019 (Mixed: 건강인~전당뇨, 5분 주기)
 
 ![Colas_2019 5-way 비교](C:/Users/user/.gemini/antigravity/brain/38f5efed-7107-47fb-867f-a92bf1cf0b32/5way_Colas_2019.png)
 
@@ -220,7 +220,7 @@ source_only MARD를 기준으로 도메인 갭의 크기를 정량화할 수 있
 |---|---|---|---|---|
 | CITY (T1D/T2D/ND 혼합) | 5min | 6.0% | 5.8% | 0.2%p (작음) |
 | ShanghaiT2DM (T2D) | 15min | 10.6% | 10.2% | 0.4%p (중간) |
-| Colas_2019 (ND→T2D) | 5min | **19.0%** | 6.6% | **12.4%p (극단적)** |
+| Colas_2019 (Mixed: 건강인~전당뇨) | 5min | **19.0%** | 6.6% | **12.4%p (극단적)** |
 
 **5min 그룹 — CITY 해석:**
 CITY는 T1D를 다수 포함한 혼합 코호트이므로 T1D 소스와의 분포 차이가 작다.
@@ -229,8 +229,8 @@ source_only MARD 6.0% vs target_only 5.8%의 차이(0.2%p)는 사실상 무시�
 결과적으로 이 타겟에서는 전이학습의 필요성 자체가 낮다.
 
 **5min 그룹 — Colas_2019 해석:**
-Colas_2019는 source_only MARD가 19.0%에 달하며, 이는 **T1D 모델이 건강인 혈당을 전혀 예측하지 못함**을 의미한다.
-건강인의 혈당은 70~140 mg/dL 범위에서 안정적으로 유지되지만, T1D 모델은 고변동 패턴(40~400 mg/dL)에
+Colas_2019는 source_only MARD가 19.0%에 달하며, 이는 **T1D 모델이 이 코호트의 혈당을 전혀 예측하지 못함**을 의미한다.
+이 코호트의 혈당은 70~140 mg/dL 범위에서 안정적으로 유지되지만, T1D 모델은 고변동 패턴(40~400 mg/dL)에
 최적화되어 있어, 안정적 구간에서의 미세한 변동을 과대 추정한다.
 이 데이터셋은 3개 타겟 중 도메인 갭이 가장 극단적이며, negative transfer도 가장 심각하다 (+1.36 RMSE).
 
@@ -348,7 +348,7 @@ T1D 모델을 건강인~전당뇨 집단에 적용하면, **AI 예측의 정확�
    3개 타겟 전체에서 `mixed > target_only`가 확인되었다.
 
 2. **도메인 갭은 질병 유형에 비례한다.**
-   CITY(Mixed) < ShanghaiT2DM(T2D) < Colas_2019(ND) 순서로 도메인 갭이 커진다.
+   CITY(Mixed) < ShanghaiT2DM(T2D) < Colas_2019(Mixed: 건강인~전당뇨) 순서로 도메인 갭이 커진다.
 
 3. **CORAL과 TrAdaBoost는 negative transfer를 해소한다.**
    두 방법 모두 mixed의 성능 저하를 제거하여 target_only 수준을 회복시킨다.
