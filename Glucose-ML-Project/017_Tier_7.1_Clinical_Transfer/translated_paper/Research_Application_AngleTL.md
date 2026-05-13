@@ -101,3 +101,88 @@ $$ \hat{\beta}_{\lambda,\eta} = \arg \min_{\beta} \frac{1}{n}\|Y - X\beta\|_2^2 
 의사는 AI에게 이렇게 지시하는 것과 같습니다. *"저 글로벌 AI가 혈당이 오를지 내릴지 알려주는 **'추세 방향(Trend/Angle)'**만 빼오고, 정확히 얼마나 오를지 **'절대 수치(Scale)'**는 우리 병원 환자 100명 데이터만 보고 다시 맞춰라."*
 
 이 알고리즘은 글로벌 데이터의 강력한 패턴 감지 능력(각도)은 물려받으면서도, 절대적인 스케일은 철저히 로컬 병원(타겟)에 맞게 재조정합니다. 그 결과 의사를 피곤하게 하던 가짜 알람은 사라지고, 혈당 추세 예측의 정확도만 남아 환자 안전을 지키는 데 실질적인 도움을 줍니다.
+
+---
+
+## 7. AngleTL 전체 과정 수도-알고리즘 (Pseudo-Algorithm)
+
+논문에서 제안한 다중 소스 통합(Algorithm 2)과 AngleTL 모델 최적화의 전체 흐름을 쉽게 이해할 수 있도록 자연어 버전과 수식 버전으로 정리했습니다.
+
+### 7.1 자연어 버전 (Natural Language Version)
+
+**[1단계] 다중 병원 소스 모델 통합 (검증 데이터 불필요)**
+1. 각 병원(예: 6개 코호트)별로 미리 학습된 회귀 모델의 가중치들을 가져옵니다.
+2. 각 병원 가중치들의 크기(Scale)를 무시하고 방향만 남기기 위해 정규화(Normalize)합니다.
+3. 이 정규화된 가중치들을 모아놓고 '주성분 분석(PCA)'을 수행하여 가장 지배적인 공통 패턴(첫 번째 주성분)을 찾습니다.
+4. 이 공통 패턴에 가장 잘 부합하는 병원일수록 높은 가중치를, 튀는 병원일수록 낮은 가중치를 부여합니다.
+5. 부여된 가중치에 따라 6개 병원의 모델을 하나의 **'통합 글로벌 소스 모델'**로 합칩니다.
+
+**[2단계] 최적 하이퍼파라미터 탐색 (Cross-Validation)**
+1. 타겟 병원(예: 100명)의 훈련 데이터를 여러 조각(Fold)으로 나눕니다.
+2. 일반적인 과적합 방지 규제 강도($\lambda$)와 "글로벌 소스 모델의 방향성을 얼마나 따를 것인가"를 결정하는 각도 규제 강도($\eta$)의 다양한 조합을 만듭니다.
+3. 각 조합에 대해 타겟 모델을 학습시키고, 남겨둔 조각으로 오차를 평가합니다.
+4. 평가 오차가 가장 작은 최적의 $(\lambda^*, \eta^*)$ 조합을 선택합니다.
+
+**[3단계] 최종 타겟 모델 도출**
+1. 찾아낸 최적의 하이퍼파라미터 조합을 사용하여, 타겟 병원의 전체 훈련 데이터로 최종 모델을 학습시킵니다.
+2. 학습된 최종 모델은 타겟 병원의 스케일에 맞춰져 있으면서도, 글로벌 소스 모델의 혈당 변동 경향성을 완벽히 따르게 됩니다.
+
+### 7.2 수식 버전 (Mathematical/Code Version)
+
+**입력 (Input):**
+- 타겟 훈련 데이터: $(X, Y)$ (단, $X \in \mathbb{R}^{n \times p}, Y \in \mathbb{R}^n$)
+- 6개 소스 병원의 사전 학습된 파라미터 벡터: $\hat{w}_1, \dots, \hat{w}_6 \in \mathbb{R}^p$
+- 탐색할 하이퍼파라미터 그리드: $\Lambda$ (Ridge 규제용), $H$ (Angle 규제용)
+
+**[Step 1] Spectral Weighting 기반 다중 소스 통합 (Algorithm 2)**
+```text
+FOR k = 1 to 6:
+    # 1. 소스 벡터 정규화
+    w_bar[k] = \hat{w}_k / ||\hat{w}_k||_2 
+
+# 2. 행렬 구성 및 PCA (Eigen-decomposition)
+W_matrix = [w_bar_1, ..., w_bar_6]^T  (크기: 6 x p)
+Cov_matrix = W_matrix * W_matrix^T    (크기: 6 x 6)
+u_1 = Eigenvector(Cov_matrix) corresponding to largest eigenvalue
+
+FOR k = 1 to 6:
+    # 3. 첫 번째 고유벡터(주성분)의 절대값을 가중치로 할당
+    s_hat[k] = |u_1[k]|
+
+# 4. 최종 통합 소스 벡터 도출
+\hat{w}_global = SUM_{k=1}^6 (s_hat[k] * w_bar[k])
+```
+
+**[Step 2] AngleTL 교차 검증 (Cross-Validation)**
+```text
+Initialize min_error = Infinity, best_params = (\lambda, \eta)
+
+FOR \lambda in \Lambda:
+    FOR \eta in H:
+        current_error = 0
+        FOR fold in Folds(X, Y):
+            X_train, Y_train, X_val, Y_val = split(fold)
+            
+            # AngleTL Closed-form Solution (해석적 해)
+            # 수식: (X^T X + n*\lambda*I)^{-1} * (X^T Y + n*\eta*\hat{w}_global)
+            \beta_temp = Inverse(X_train^T * X_train + n * \lambda * I) 
+                         * (X_train^T * Y_train + n * \eta * \hat{w}_global)
+            
+            # 검증 오차(MSE) 계산
+            error = ||Y_val - X_val * \beta_temp||_2^2
+            current_error += error
+            
+        IF current_error < min_error:
+            min_error = current_error
+            best_params = (\lambda, \eta)
+```
+
+**[Step 3] 최종 모델 도출 (Final Inference)**
+```text
+\lambda*, \eta* = best_params
+
+# 전체 타겟 데이터를 이용한 최종 학습
+\beta_final = Inverse(X^T * X + n * \lambda* * I) * (X^T * Y + n * \eta* * \hat{w}_global)
+
+RETURN \beta_final
+```
