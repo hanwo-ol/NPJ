@@ -1,0 +1,1542 @@
+Total pages: 15
+
+===PAGE 0===
+ISTRBoost: Importance Sampling Transfer Regression using
+Boosting
+Shrey Gupta1, Jianzhao Bi2, Yang Liu3 and Avani Wildani1*
+1*Department of Computer Science, Emory University, Atlanta, GA, US.
+2Department of Environmental and Occupational Health Sciences, University of
+Washington, Seattle, WA, US.
+3Gangarosa Department of Environmental Health, Emory University, Atlanta, GA, US.
+*Corresponding author(s). E-mail(s): avani@mathcs.emory.edu;
+Contributing authors: shrey.gupta@emory.edu; jbi6@uw.edu; yang.liu@emory.edu;
+Abstract
+Current Instance Transfer Learning (ITL) methodologies use domain adaptation and sub-space trans-
+formation to achieve successful transfer learning. However, these methodologies, in their processes,
+sometimes overﬁt on the target dataset or suﬀer from negative transfer if the test dataset has a high
+variance. Boosting methodologies have been shown to reduce the risk of overﬁtting by iteratively
+re-weighing instances with high-residual. However, this balance is usually achieved with parameter
+optimization, as well as reducing the skewness in weights produced due to the size of the source dataset.
+While the former can be achieved, the latter is more challenging and can lead to negative transfer.
+We introduce a simpler and more robust ﬁx to this problem by building upon the popular boosting
+ITL regression methodology, two-stage TrAdaBoost.R2. Our methodology, S-TrAdaBoost.R2, is a
+boosting and random-forest based ensemble methodology that utilizes importance sampling
+to reduce the skewness due to the source dataset. We show that S-TrAdaBoost.R2 per-
+forms better than competitive transfer learning methodologies 63% of the time. It also
+displays consistency in its performance over diverse datasets with varying complexities,
+as opposed to the sporadic results observed for other transfer learning methodologies.
+Keywords: Instance Transfer Learning, Negative Transfer, Domain Adaptation
+1 Introduction
+While semi-supervised learning and unsupervised
+learning methodologies work well for partially
+labelled or unlabelled datasets [5, 44], they fall
+short for instances where sample size is small [22,
+45, 62–64]. Instance Transfer Learning (ITL) [18,
+20, 25, 43, 45, 63, 64], a sub-class of data-based
+transfer learning approaches [70], is designed
+for limited and labelled samples, shared feature-
+space, and independent and identically distributed
+(i.i.d) data-distributions [46, 59], making it ideal
+for real-world datasets [11, 13, 32, 36, 40, 48].
+It stands apart from its counterparts, such as
+Feature transfer learning and Parameter trans-
+fer learning, as it allows data adjustment and
+transformation of domain instances, making it
+1
+arXiv:2204.12044v1  [cs.LG]  26 Apr 2022
+
+===PAGE 1===
+ideal for dissimilarly distributed source and tar-
+get domains. Moreover, ITL methodologies are
+as statistically interpretable [12] as they are pow-
+erful [6, 63], which increases their usability for
+domain experts [61] who avoid complex, black-box
+methodologies [4, 26, 31]. Therefore, these method-
+ologies have an advantage of being less complex but
+equally reliable when compared to deep transfer
+methodologies. Another reason for leaning towards
+ITL methodologies is because it is easier to transfer
+the source domain by applying adaptation method-
+ologies [29, 54] as well as using techniques involving
+reduction of distribution diﬀerence between the
+source and the target domain [14, 24, 54]. The
+accuracy of prediction does not just depend on the
+transfer learning methodology, but also involves
+the nature of distribution. Real-world datasets
+suﬀer from collecting data that is complete, high-
+resolution, and evenly sampled. This is due to
+the dependence on cost of equipment which can
+result in hardware limitations. This leads to the
+resulting dataset varying in resolution as well as
+the quality [36]. Hence, a robust transfer learning
+methodology should perform consistently well for
+data distributions with varying complexities.
+Among the ITL methodologies, we employ
+ensemble methodology, especially the boosting
+methodology [12] as it aggregates the results from
+multiple learners. Similarly, the transfer boosting
+methodology TrAdaBoost.R2 [47] is regularized
+and uses domain adaptation for iteratively re-
+weighing the source instances with respect to the
+target dataset for knowledge transfer [58]. The
+underlying architecture is AdaBoost [23], which
+focuses on misclassiﬁed traning instances, lead-
+ing to a contextual learning. However, boosting
+methodologies suﬀer from negative transfer [50]
+when source dataset size is large compared to
+the target dataset, leading to a skewed ﬁnal
+model. To address the problem of negative trans-
+fer, we introduce S-TrAdaBoost.R2, a successor
+to two-stage TrAdaBoost.R2 (TTR2) that uses
+importance sampling [33, 45, 69] to improve align-
+ment of source instances with the target values,
+and also mitigates the skewness generated due
+to the large sample size of source datasets. We
+test S-TrAdaBoost.R2 across a range of standard
+regression datasets with limited target instances
+and varying complexities, and ﬁnd that it outper-
+forms other ITL methodologies 63% of the times
+and the baseline TTR2 more than 75% of the times.
+Notably, it has a consistent performance (RMSE
+and R-squared score) for both the regular compar-
+ative study and the Ablation study (Fig. 2 and
+Table 2), as opposed to ﬂuctuating results observed
+for other methodologies.
+The primary contributions of this paper are:
+1. We
+introduce
+S-TrAdaBoost.R2,
+a
+complexity-tolerant,
+domain-agnostic
+boosting-based transfer learning algorithm
+that
+uses
+importance
+sampling
+and
+an
+unconstrained weight update strategy to
+outperform its predecessor TTR2 and other
+competitive ITL methodologies.
+2. We discuss the complexity measures, i.e.,,
+metrics to quantify complexity of distribution.
+They categorize the distribution based on cor-
+relation, linearity, and smoothness, to provide
+a numerical estimate of its simplicity.
+3. We demonstrate that
+S-TrAdaBoost.R2
+outperforms competitive ITL methodologies
+when measured in terms of accuracy and loss,
+for high complexity datasets. We also provide
+the ablation analysis for Importance Sam-
+pling, which demonstrates the modularity and
+commutability of the technique.
+2 Background
+Previous work on transfer learning [18, 64] pro-
+vides methodologies for measuring the shared
+information content between multiple domains
+in transfer learning [39, 41, 56]. These models
+attempt to ﬁnd common structural representations
+of source instances to gauge the quantity as well
+as quality for the transfer. However, for highly
+dissimilar source and target domain instances, a
+reduction of prediction accuracy for transfer learn-
+ing algorithms when compared to non-transfer
+learning algorithms i.e., negative transfer is com-
+monplace [50]. Fig 1 shows negative transfer
+when TTR2 and AdaBoost.R2 are ﬁtted over
+the Concrete dataset from UCI machine learning
+repository [3]. We observe a decline in TTR2’s per-
+formance as the target sample size increases. This
+shows a trade-oﬀin the performance of transfer
+learning algorithms to the sample size of the target
+distribution. Hence, transfer learning algorithms
+perform better when the sample size of a target
+dataset is small.
+The concept of translating knowledge and
+model across domains has been much researched
+
+===PAGE 2===
+3
+upon and hence, transfer learning, similar to
+machine learning, is observed for both classical
+transfer learning [9, 14, 24, 47] and deep transfer
+learning methodologies [4, 26, 31, 37, 57, 66, 68, 71].
+While deep networks can often improve trans-
+fer accuracy, they sacriﬁce model interpretability,
+generalizability, adaptability, and ﬂexibility for
+more diverse tasks [8, 49]. Whereas, ITL algo-
+rithms, unlike deep transfer models, do not suﬀer
+from obscurity in showing intermediary steps and
+learnt concepts in order to have a greater trans-
+parency. Even for unrelated source and target
+domains, the source instances adapt to the target
+instances by either re-weighting [9, 24] or trans-
+forming to the target space [14], indicative of the
+adaptability of ITL methodologies. The current
+ITL methodologies can be vaguely divided into
+two types based on how they apply the weighing
+strategy to the source domain instances. The ﬁrst
+one involves re-weighing all the source instances
+at once using techniques such as Kernel Mean
+Matching (KMM) [14, 29], Weighted-Kernel Ridge
+Regression [24], Kullback-Leibler Importance Esti-
+mation [54], translating training instances to an
+Invariant Hilbert Space [27], or learning source
+domain instance weights based on the conditional
+distribution diﬀerence from the target domain [10].
+The second type of methodology is the ensem-
+ble learning methodology, primarily including the
+boosting techniques.
+2.1 Boosting
+Boosting [23] is an ensemble technique that builds
+a classiﬁer by using a set of weak learners, whereby
+the weights of the training samples are updated
+over a chosen number of iterations, and ﬁnally
+these weak learners are combined to generate a
+strong learner. Popular boosting methodologies
+such as AdaBoost.R2 [19] typically assume that
+the test and training datasets have a similar distri-
+bution and hence do not require domain adaptation.
+They do not suﬀer from overﬁtting [55], and have
+a robust prediction over diverse datasets.
+2.1.1 Boosting for Transfer Learning
+TrAdaBoost [15] is a classiﬁcation boosting frame-
+work that applies transfer learning to compensate
+for a lack of training instances for the target
+dataset. The source and target data instances are
+35
+43
+53
+63
+% Data as Target
+0.475
+0.500
+0.525
+0.550
+0.575
+0.600
+0.625
+R2 score
+TrAdaBoost.R2
+AdaBoost.R2
+Fig. 1: Negative transfer in TTR2 is induced as a
+result of increasing the target sample size from 35%
+to 63% of the total training data. The baseline algo-
+rithm is AdaBoost.R2. For a larger target sample
+size, the baseline performs better than TTR2
+merged to form the training data for the TrAd-
+aBoost, and in each iteration the weights of the
+instances are adjusted such that the misclassi-
+ﬁed target instances have their weights increased,
+whereas the misclassiﬁed source instances have
+their weights reduced, in order to reduce their
+impact towards the model learning. However, this
+may lead to model over-ﬁtting, reduction in vari-
+ance of the training model, therefore negatively
+aﬀecting the model generalizability [60].
+2.1.2 Boosting for Regression Transfer
+TrAdaBoost.R2
+[47]
+builds
+upon
+TrAd-
+aBoost
+[19]
+for
+regression
+problems,
+using
+adjusted error over residuals and reweighing
+of the instances. The improved version, called
+two-stage TrAdaBoost.R2 (TTR2), is divided
+into two stages. The ﬁrst stage involves gradually
+reducing the weights of the source instances until
+a certain cross-validation threshold is achieved. In
+the second stage, weights of the source instances
+are frozen while the weights of the target instances
+are updated as in AdaBoost.R2. The bi-update
+methodology for TTR2 helps reduce the skewness
+produced due to source instances. This mostly
+
+===PAGE 3===
+happens in the cases when source sample size is
+very large compared to the target sample size,
+which consequently makes the model learning
+biased towards the source domain.
+2.2 Variants of Regression Transfer
+Pardoe et al. [47] introduced two categories of
+transfer learning algorithms. The ﬁrst category con-
+tains algorithms that choose the best hypothesis
+from a set of experts, each representing the models
+for the corresponding source dataset. This cate-
+gory includes algorithms such as ExpBoost.R2 and
+Transfer Stacking. Algorithms in the second cate-
+gory, which include TrAdaBoost.R2 and TTR2,
+use the grouped source and target datasets to
+perform boosting. Since boosting methodologies
+involve instance reweighing, they fall under the
+category of transfer learning algorithms that use
+domain adaptation. This is especially useful and
+applicable for real-world datasets with dissimilar
+domain distributions. Hence, such domain adap-
+tation transfer methodologies help in reducing
+the burden of maintaining expert systems [50].
+Apart from the boosting methodologies, the vary-
+ing domain adaptation approaches include using a
+kernel-employing Gaussian process [9] for source
+instance modiﬁcation or kernel ridge regression,
+and discrepancy minimization for domain adap-
+tation [14]. Similar to importance sampling [45],
+several studies [24, 42] have used importance
+weighting of source instances to improve inference
+for transferring knowledge. Transfer methodolo-
+gies using approaches similar to active learning,
+such as [17] (employing modeling structure with
+second-order Markov chains), as well as the bur-
+geoning variety of deep learning approaches [5, 16],
+are indicative of the usefulness of active learning
+in the form of importance sampling as a viable
+technique to be picked up by ITL methodologies.
+2.3 Importance Sampling
+Importance sampling is a methodology based on
+the concept that certain instances of the source
+dataset are more similarly distributed to the
+instances in the target dataset and thus should be
+sampled for learning optimal transfer models. The
+core tenet of importance sampling is that mod-
+els should be trained with some cognizance of a
+multi-domain transfer, in order to avoid stale train-
+ing data [33, 45, 65]. Zhao et al. [69] introduce
+stochastic optimization for importance sampling of
+non-transfer learning problems, to reduce variance
+and improve convergence. Schuster et al. [52] uses
+Monte Carlo methods to introduce adaptive impor-
+tance sampling methodology for transfer learning.
+Salaken et al. [51] present a seeded sampling tech-
+nique for transfer learning that we extend to form
+the variance sampling component used by our algo-
+rithm, S-TrAdaBoost.R2. Their work introduces
+an algorithm to cluster the source domain instances
+which are then translated to limited target domain
+instances for knowledge/domain adaptation. In the
+following section, we describe how we utilize the
+concept used by seeded sampling for cherry picking
+instances from the source domain for the purpose
+of introducing variance in the target dataset.
+3 Methodology
+Problem Deﬁnition:
+Given source and target datasets, such that their
+instances are denoted by xT and xS respectively.
+Hence, the target dataset is denoted as XT =
+{xT
+1 , xT
+2 , ..., xT
+m} for m instances and source dataset
+is denoted as XS = {xS
+1 , xS
+2 , ..., xS
+n} for n instances.
+Similarly, the target output dataset is denoted
+as Y T = {yT
+1 , yT
+2 , ..., yT
+m} and the source output
+dataset is denoted as Y S = {yS
+1 , yS
+2 , ..., yS
+n}. The
+target domain suﬀers from signiﬁcant data deﬁ-
+ciency and dissimilarity of distribution compared
+to the source domain. Our goal is to ﬁnd a transfer
+learning approach that can use the source domain
+instances as a leverage for building the prediction
+model as well as avoiding negative transfer. The
+transfer learning algorithm should perform consis-
+tently well on varying domain distributions with
+diﬀering complexities.
+Approach:
+S-TrAdaBoost.R2 is a transfer regression boost-
+ing algorithm which builds a model, hf : X →Y ,
+such that hf is the ﬁnal learnt hypothesis of the
+ensemble of hypotheses over the learning iterations,
+using the training data which is a combination of
+source and target datasets that share a similar fea-
+ture space but have dissimilar distributions. Hence
+by this deﬁnition, the combined training dataset
+(source + target) can be denoted as {(x, y)∥x ∈
+
+===PAGE 4===
+5
+XT ∪XS, y ∈Y T ∪Y S and XT , XS, Y T , Y S ∈Rd}
+where d represents the feature space of the source
+and target domain.
+Algorithm 1: k-Center Sampling
+Input: XT , Y T , XS, Y S
+Output: The labeled data set XV T (size
+k).
+1 Find XC ⊂XS such that
+XC = {xC
+1 , xC
+2 , ..., xC
+k } has k samples,
+obtained using k-Means Clustering on set
+XS.
+2 Initialize XE = φ (Empty-set)
+3 for xC ∈XC do
+4
+Find xT such that ∀xT ∈XT
+min
+{XC −xT }
+XE ∪{xT }
+5 end for
+6 Repeat steps 3 to 5 and obtain set XV T
+closest to instances in set XE.
+7 return XV T
+3.1 S-TrAdaBoost.R2
+To
+improve
+the
+performance
+of
+TTR2,
+we
+present S-TrAdaBoost.R2 as shown in Algo-
+rithm 2. There are two main areas where S-
+TrAdaBoost.R2
+diverges
+from
+its
+predeces-
+sor, TTR2; the ﬁrst is applying importance
+sampling, and the second is the weight update
+strategy for S-TrAdaBoost.R2, which diﬀers from
+the TTR2. In the following sub-sections we elab-
+orate upon these diﬀerences as well as determine
+the time complexity of S-TrAdaBoost.R2.
+3.1.1 Sampling
+In order to improve the prediction accuracy, S-
+TrAdaBoost.R2 initially samples the source
+dataset, XS, to obtain optimal representative
+instances, i.e. similar instances to the target
+dataset, XT . It applies a greedy approach for calcu-
+lating the distance between source and the target
+instances. Such an importance sampling can be
+achieved by using any distance measure such as
+Euclidean distance, Manhattan distance, or others.
+For our experiments, we use the Euclidean distance
+(L2 norm). Hence, we ﬁnd the set XES such that,
+XES = ∥xS
+i −¯xT∥
+∀xi ∈XS
+where ¯xT is the mean of target instances, ∥.∥
+is the Euclidean distance, and |XES| = |XS|, i.e.
+they share the same cardinality. We select the
+top p instances from XES for the source dataset,
+which reduces the source dataset size to XK =
+{xK
+1 , xK
+2 , ..., xK
+p } such that p << n and discard
+the remaining (n −p) instances, since they failed
+the similarity testing.
+Furthermore, to improve the generalizability of
+the prediction model, we also induce variance in
+the target dataset whereby source instances most
+similar to the target instances are added using the
+k-Center Sampling, an approach presented in Algo-
+rithm 1. Including the most similarly distributed
+source samples in the target dataset improves
+the ﬁt for the regressor since S-TrAdaBoost.R2
+focuses more on target instances than the source
+instances. These similarly distributed source sam-
+ples behave as noise for the target distribution
+and thereby improve the generalization error. Even
+though TTR2 tries to mitigate this using its two-
+stage source instance penalizing process, we found
+that reducing the source sample size using impor-
+tance sampling, as well as performing variance
+sampling, allows S-TrAdaBoost.R2 to perform
+better compared to its predecessor.
+k-Center Sampling
+is an unsupervised approach that returns k cen-
+troids, where k is equal to the number of source
+instances in the set, XS (Alg. 1). We employ k-
+Center Sampling in our methodology to introduce
+noise in the target dataset, in order to increase its
+variability. After the selection of centroids, the tar-
+get instances closest to these centroids are selected
+as the representative target set, XC. The source
+instances most similar to the representative tar-
+get set are chosen as the ﬁnal subset, XV T , for
+inclusion into the target dataset. The k-Center
+Sampling methodology is presented in Alg. 1. The
+ﬁnal size of target dataset is, q = n + k. For the
+k-Center Sampling, the time complexity is O(N 2)
+as result of using the k-means clustering for calcu-
+lating the closeness. Hence, the sampling pipeline
+produces new source dataset (due to Importance
+
+===PAGE 5===
+Sampling) and new target dataset (due to Variance
+Sampling) as XES and XV T respectively.
+3.1.2 Weight Update Strategy
+We present S-TrAdaBoost.R2 in Algorithm 2,
+where we hypothesize that by updating the target
+weights more aggressively, the prediction model is
+able to mitigate the source distribution bias. This
+is especially useful for dissimilar source and target
+domain distributions, as well as when |XS| >>
+|XT |. We also note that S-TrAdaBoost.R2 does
+not employ AdaBoost.R2’ [47], a modiﬁed ver-
+sion of AdaBoost.R2 where the weights of source
+instances are frozen and the weights of target
+instances are updated based on the reweighing
+approach used by AdaBoost.R2. However, apply-
+ing highly focused domain adaptation by freezing
+weights of source instances can greatly reduce
+the generalizability of the model. Hence, in S-
+TrAdaBoost.R2, the hypothesis is obtained by
+using the AdaBoost.R2 methodology initially.
+The weights for the instances are then updated
+iteratively using the following weight equation,
+wt+1
+i
+=
+
+
+
+wt
+i ¯
+βt
+et
+i α
+Zt
+,
+1 ≤i ≤p
+wt
+iβ
+1−et
+i
+t
+α
+Zt
+,
+1 ≤i ≤(p + q)
+In the above equation, ¯βt = ηt/1 −ηt such
+that ηt = P(p+q)
+k=1
+wt
+iet
+i, and Zt = α/ P(q)
+k=1 wi βt,
+which is equivalent to the sum of resulting weight
+of target instances. For the above weighing strat-
+egy, the adjusted error, ei for each instance in the
+training dataset, allows for the penalization of the
+weights of instances. For a large adjusted error
+the source instances are punished more than the
+target instances, making their weights smaller. In
+such a case, the algorithm focuses more on target
+instances. As the number of iterations increase,
+βt for target instances increases, whereas for the
+source instances ¯βt depends on the adjusted error.
+Hence, the source instances, although much more
+penalized than target instances, still are not aggres-
+sively ﬁned as is done in TTR2, which may lead
+to overﬁtting on the dataset. We can summarize
+this by saying that instead of allowing the gradual
+weight increase of the target instances, we allow
+them to increase without any constraint, in order
+Algorithm 2: S-TrAdaBoost.R2
+Input: The labeled data sets, XS (size n)
+and XT (size m)
+The number of estimators, N
+The number of cross validation
+folds, F
+Number of Steps/Iterations, S
+The base learning algorithm,
+learner
+Learning rate, α
+Output: Final hypothesis, hf
+1 Importance Sampling
+Get XES dataset containing p instances
+most similar to XS.
+2 Variance Sampling
+Get XV T dataset (size q), obtained using
+k-Center Sampling on set XT .
+3 Initialize
+Initial weight vector w1 as,
+w1
+i = 1/(p + q)
+for
+1 ≤i ≤p + q
+4 for t ←1 to S do
+5
+Call AdaBoost.R2 with N estimators
+and the learner to obtain hypothesis
+ht.
+6
+Calculate the adjusted error using the
+hypothesis ht over F folds as,
+ei = |y(xi) −h(xi)|/J
+where J is,
+J =
+(p+q)
+max
+i=1 |ei|
+7
+Set ¯βt = ηt/1 −ηt where
+ηt = Pp+q
+i=1 wt
+iet
+i and
+βt =
+q
+(p + q) +
+t
+(S −1)(1 −
+q
+(p + q)).
+8
+Update the weights as:
+wt+1
+i
+=
+
+
+
+wt
+i ¯
+βt
+et
+i α
+Zt
+,
+1 ≤i ≤p
+wt
+iβ
+1−et
+i
+t
+α
+Zt
+,
+p ≤i ≤(p + q)
+9
+where Zt = sum of sample weights
+10 end for
+11 returnhf = argmini errori
+
+===PAGE 6===
+7
+to balance the skewness in weighing caused by a
+large number of source instances.
+3.1.3 Time Complexity
+for S-TrAdaBoost.R2
+The time complexity of the S-TrAdaBoost.R2 can
+be divided into four parts:
+1. Time complexity of importance sampling (O1)
+2. Time complexity of producing a weak hypoth-
+esis (O2)
+3. Time complexity of computing the error rate
+in S-TrAdaBoost.R2 (O3)
+4. Time complexity of the second-stage of S-
+TrAdaBoost.R2 (O4)
+For S iterations, time complexity can be deﬁned
+as O(S ∗(O2 + O3 + O4)). For our experiments,
+we chose decision tree as the base learner. The
+time complexity for creating a decision tree is
+O(d ∗N 2 ∗logN) (O2), where d is the dimen-
+sion of the dataset, N is the number of samples,
+and each decision is taken in O(logN) time. The
+time complexity of computing adjusted error com-
+bined with the weight update process (O3), does
+not increase more than O(N). Finally the time
+complexity of the computing the second-stage of
+the S-TrAdaBoost.R2 is similar to producing a
+weak hypothesis (O4). Hence, the time complexity
+over S iterations is,
+O(S ∗(d ∗N 2 ∗logN + N + d ∗N 2 ∗logN)) =
+O(2 ∗S ∗d ∗N 2 ∗logN + S ∗N))
+= O(S ∗d ∗N 2 ∗logN))
+For the k-Center Sampling, the time com-
+plexity is O(N 2) for calculating closeness using
+the k-means clustering, as well as using Manhat-
+tan distance for ﬁnding the most similar source
+instances. Hence, the total time complexity for
+S-TrAdaBoost.R2 can be calculated as,
+O(S ∗d ∗N 2 ∗logN + N 2) = O(S ∗d ∗N 2 ∗logN)
+3.2 Complexity of Distribution
+Domain-agnostic characterizations of dataset com-
+plexity are surprisingly uncommon. Fernandez
+et al. [21] present a characterization based on
+Shannon entropy, but this does not extend to the
+continuous, often real-valued domains of many real-
+world datasets [7]. Other intuitive measures such
+as sorting datasets by number of features or self-
+similarity do not reliably capture types of datasets
+that we observed as being especially prone to neg-
+ative transfer. Heterogeneity and complexity of
+datasets usually determine the model performance.
+While heterogeneity of real-world datasets can be
+outlined as a factor of their multi-source and spatio-
+temporal character, this might not be true for
+their complexity. Ho et al. [28] proposed metrics
+to measure complexity for classiﬁcation datasets.
+Maciel et al. [38] extended that work for regres-
+sion datasets which later stemmed the work done
+by Lorena et al. [35] that uses meta-features as a
+measure of complexity.
+3.2.1 Collective Feature Eﬃciency
+(CF E): Correlation Measure
+Correlation Measure determines the highly cor-
+related predictor to the target variable and ﬁts
+a linear regressor to ﬁnd its residuals. All the
+instances having residual less than a certain thresh-
+old (ϵ ≤0.1) are discarded and the remaining
+instances are used to determine the next highly
+correlated predictor. The process is repeated until
+the complete feature space has been visited. Maciel
+et al. [38] describes the measure in detail where the
+Collective Feature Eﬃciency (CF E) is quantiﬁed
+as,
+CF E = 1 −
+X
+k
+Nk
+N
+where Nk is the number of instances that are
+removed (using the set threshold), N is the total
+number of instances and k is the feature. Higher
+values for CF E indicate more complex problems.
+3.2.2 Distance from Linear Function
+(DL): Linearity Measure
+Linearity Measure sums the absolute values of resid-
+uals when a multiple linear regressor is used as the
+learner [38]. It is expressed as a distance measure
+(DL) and is quantiﬁed as,
+DL = 1 −
+N
+X
+i=1
+Ri
+N
+where Ri are the residues and N is the sample
+size. Lower values indicate a simpler distribution.
+
+===PAGE 7===
+Table 1: Dataset Statistics [Tr: Training, Tt: Test, P M
+C : predictor] and Complexity (Section 3.2)
+Concrete
+Housing
+Auto
+Ailerons
+Elevators
+Abalone
+Kinematics
+C.Activity
+Shape
+(1030, 9)
+(506, 14)
+(392, 8)
+Tr: (7154, 41)
+Tt: (6596, 41)
+Tr: (8572, 19)
+Tt: (7847, 19)
+(4177, 9)
+(8192, 9)
+(8192, 22)
+Target
+Strength
+medv
+mpg
+goal
+Goal
+Rings
+y
+usr
+P M
+C
+Cement
+nox
+h.power
+None
+None
+weight
+theta7
+pgin
+CF E
+0.66
+0.39
+0.51
+0.47
+0.59
+0.69
+0.70
+0.36
+DL
+0.20
+0.29
+0.24
+0.26
+0.32
+0.27
+0.19
+0.36
+DI
+0.71
+0.90
+0.58
+0.68
+0.59
+0.51
+1.08
+0.58
+3.2.3 Input Distribution (DI):
+Smoothness Measure
+Smoothness Measure determines the smoothness of
+the distribution by ordering the predictor values in
+ascending order with regard to the output variable.
+It then ﬁnds the distance (L2 Norm) between each
+pair of instances [38]. Lower values mean a simpler
+distribution, indicating that the instances in input
+space are closer to each other, leading to a smooth
+distribution. It is expressed as,
+DI = 1
+N
+N
+X
+i=2
+∥xi −xi−1∥
+where N is the sample size and ∥.∥is the
+Euclidean distance.
+4 Evaluation
+For
+our
+experiments,
+we
+evaluate
+S-
+TrAdaBoost.R2
+against
+other
+competitive
+transfer
+learning
+methodologies
+–
+TTR2
+[47],
+KMM.TL
+[29],
+KLIEP.TL
+[54]
+and IW-KRR.TL [24] known to perform well
+for regression based instance transfer learning
+problems. Since TTR2 is the predecessor for S-
+TrAdaBoost.R2, we deﬁne it as the baseline
+algorithm for comparison. The decision tree
+regressor was chosen as the base learner for these
+methodologies. For TTR2 and S-TrAdaBoost.R2,
+the following values were considered: S (no. of
+steps) = 30, F (CV-folds) = 10, learning rate =
+0.1 and a squared loss. Similar values were used
+by Pardoe et al. [47] for their study on regression
+boosting. For the remaining algorithms, we used
+the default values for the parameters. The val-
+ues were chosen to maintain generalizability of
+the predictions across the algorithm. They were
+derived using multiple experiments and iterations
+involving parameter tuning, and were judged to
+not be biased towards a single model to the best of
+our knowledge. The results along with the ablation
+study are presented in the following sections.
+Datasets
+We chose 8 standard regression datasets from the
+UCI machine learning repository [3] as shown in
+Table 1. UCI datasets were divided into source,
+target, and test sets using the splitting method-
+ology used by Pardoe et al. [47]. The splits were
+made by identifying the feature moderately corre-
+lated with the target variable, which allowed for
+concepts to be signiﬁcantly diﬀerent from each
+other. The ﬁrst split was considered as the target
+dataset and the remaining splits as the source dat-
+set. This was done so that the source sample size
+would be higher than the target sample size. The
+target dataset was further split into training and
+testing datasets using a K-Fold split over 20 itera-
+tions. Our initial study showed that the Root Mean
+Square loss on Concrete, Housing, and Automobile
+datasets were moderately varied for such a division
+which allowed for robust predictions since it incor-
+porated both generalizability for the models, as
+well as lesser noise. Hence, we further extended the
+splitting methodology to other datasets- Abalone,
+Kinematics and Computer Activity. For Ailerons
+and Elevators datasets, the UCI repository already
+consisted of a testing dataset. We took very few tar-
+get instances so that the remaining larger dataset
+could be used as the source dataset, which in turn
+imitates a real world transfer learning problem.
+Table 1 shows the dataset statistics including their
+size, target variable, and predictor used for corre-
+lation splitting. Although Concrete, Housing, and
+Automobile are small sample datasets, they were
+used to imitate the study by Pardoe et al. [47].
+We compensated for this imbalance using other
+
+===PAGE 8===
+9
+large sample datasets with varying heterogeneity.
+The complexity evaluation in Table 1 shows how
+complex (CF E i.e., variance, DI i.e., smoothness,
+and DL i.e., linearity) these distributions are. For
+each metric, a higher value indicates a more com-
+plex distribution. From the table we observe that
+Kinematics has the highest complexity (2 out of 3
+times) when compared to the other datasets.
+Ablation Study
+We perform the Ablation study where impor-
+tance sampling technique is applied individually
+to each transfer learning methodologies. The goal
+of this study is to induce fairness in comparison,
+given the modular nature of importance sampling
+technique. Sampling is a two-phase methodology
+which includes Variance Sampling and importance
+sampling. Variance Sampling includes sprinkling
+the target dataset with source instances in order
+to introduce noise and increase the variance of
+the distribution. For the Concrete, Housing and
+Automobile datasets, Variance Sampling was not
+applied due to low sample size. Importance sam-
+pling on the other hand uses similarity measuring
+to ﬁnd the source instances most similar (impor-
+tant) to the target instances. The Ablation study
+exploits importance sampling for all the algorithms
+and Variance sampling for datsets (not including
+the small datasets).
+4.1 Results
+We implemented the experiments on an HPC
+cluster with 16 processors and 128 GB RAM.
+Any required short supplemental processing was
+performed on personal laptops with half the num-
+ber of processors and RAM. The number of
+cross-validation fold iterations were 20 for the
+datasets. The distribution of prediction values is
+shown in the box-plot Fig. 2. We observe that S-
+TrAdaBoost.R2 consistently performs well, with
+low RMSE as well as high R-squared score. How-
+ever, this is not true for other methodologies,
+especially IW-KRR.TL and TTR2 which, although
+they sometimes outperform S-TrAdaBoost.R2,
+they also ﬂuctuate highly in their performance.
+Example IW-KRR.TL is the most optimal model
+for Automobile, Abalone and Kinematics datasets
+as observed through its mean RMSE and R-squared
+values. But it is not consistent in its performance
+as observed for C.Activity, Ailerons and Eleva-
+tors datasets, where it ﬂuctuates highly in its
+mean and variance over the iterations. However, S-
+TrAdaBoost.R2 performs consistently well for
+all of the datasets and comes a close second in
+the Kinematics dataset, where IW-KRR.TL out-
+performs the competing methodologies by a high
+margin. Similarly, for TTR2, we observe that it
+performs well (RMSE score) on Concrete and
+Abalone datasets compared to S-TrAdaBoost.R2,
+but its performance is not consistent as observed
+for Ailerons and Elevators datasets. We con-
+sider TTR2 to be our baseline algorithm for
+this study primarily because it is the predeces-
+sor of S-TrAdaBoost.R2, and observe that S-
+TrAdaBoost.R2 outperforms TTR2 75% of the
+times in the case of loss measure, and 100% when
+measured for correlation accuracy.
+Considering importance sampling is a pre-
+domain adaptation methodology and should not
+be limited to just S-TrAdaBoost.R2, we con-
+duct an Ablation study as shown in Table. 2.
+We observe minimal improvement in the per-
+formance of TTR2 and IW-KRR.TL and ﬁnd
+that S-TrAdaBoost.R2 performs consistently well
+(4 out of 5 times). Table. 2 shows that IW-
+KRR.TL has competitive scores with regard to
+S-TrAdaBoost.R2, however it suﬀers from the
+same inconsistency as observed in the comparative
+study presented in Fig. 2. Also, TTR2 does not
+show any improvement except for a similar RMSE
+score to S-TrAdaBoost.R2 for the Kinematics
+dataset. However, IW-KRR.TL easily outperforms
+all other methodologies for the Kinematics dataset.
+It should also be noted that in both the studies, the
+remaining algorithms- KMM.TL and KLIEP.TL
+performed quite poorly compared to the other
+methodologies and showed less signs of improve-
+ment in either cases. Hence, we can say that S-
+TrAdaBoost.R2 has shown itself to be consistent
+among all the measures, adapting more robustly to
+more complex and varying distribution datasets. It
+should also be noted that S-TrAdaBoost.R2 has
+consistently empirically outperformed, as well as
+being shown eﬀective in avoiding negative trans-
+fer. S-TrAdaBoost.R2 employs AdaBoost.R2 as
+an initial step and penalizes both source and target
+instances while re-weighing, instead of only source
+instances as done in TTR2. Consequently, this
+generalizes the training dataset which in turn pro-
+duces consistent performance on a diverse group of
+
+===PAGE 9===
+Fig. 2: Comparison of transfer learning algorithms– TRADA: TTR2, STRADA: S-TrAdaBoost.R2,
+KMM: KMM.TL, and KLIEP: KLIEP.TL, IWKRR: IW-KRR.TL, where the RMS error and R-squared
+score is calculated over 20 iterations. The Interquartile Range (IQR), mean value (marker: yellow ”X”),
+and median value (marker: red line) for each algorithm over the iterations have been highlighted. The
+datasets for which S-TrAdaBoost.R2 performs particularly well are marked as well (marker: purple).
+
+===PAGE 10===
+11
+Table 2: Ablation Study
+Ailerons
+Elevators
+Abalone
+Kinematics
+C.Activity
+RMSE
+R2
+RMS
+R2
+RMS
+R2
+RMS
+R2
+RMS
+R2
+TRADA
+0.00023
+0.65
+0.0042
+0.38
+2.14
+0.40
+0.18
+0.47
+2.98
+0.92
+STRADA
+0.00018
+0.79
+0.0030
+0.81
+2.02
+0.43
+0.18
+0.51
+2.48
+0.94
+KMM
+0.00029
+0.46
+0.0049
+0.31
+2.73
+0.06
+0.27
+0.08
+11.30
+0.17
+KLIEP
+0.00026
+0.58
+0.0043
+0.42
+2.76
+0.10
+0.26
+0.10
+11.09
+0.22
+IWKRR
+0.00025
+0.63
+0.0021
+0.81
+1.99
+0.41
+0.10
+0.84
+8.77
+0.66
+datasets, as seen in prior [60] as well as our transfer
+learning research.
+5 Discussion
+Since S-TrAdaBoost.R2 is a successor to TTR2,
+we take TTR2 as the baseline and observe that S-
+TrAdaBoost.R2 outperforms it 7 out of 8 times
+during the comparative study. We also note
+that TTR2 shows no signiﬁcant improvement dur-
+ing the ablation study. This justiﬁes the steady
+performance of S-TrAdaBoost.R2, where it con-
+sistently scores optimal RMSE and R-squared
+values during the comparative and ablation studies.
+The ablation study is used to justify how impor-
+tance sampling is useful when combined with the
+learning methodology for S-TrAdaBoost.R2. This
+is due to balanced weighing and generalization,
+complimented by source domain sampling method-
+ology. We ﬁnd that for relatively complex datasets
+(Concrete, Elevators, Kinematics, and C.Activity)
+derived from the complexity analysis presented in
+Table 1 , S-TrAdaBoost.R2 performs well on most
+of them (3 out of 4 times), falling short only in
+the case of Kinematics dataset when compared
+to IW-KRR.TL methodology.
+It should be noted that both the training
+error and the generalization error of a similar
+problem space are analyzed thoroughly in Fre-
+und et al. [23], and this analysis is further known
+to apply to TrAdaBoost.R2 [47], a predeces-
+sor to S-TrAdaBoost.R2. The objective function
+for transfer learning involves minimizing the loss,
+minh{L(h) + λη}, where η is the regularization
+function, and λ is the regularization constant for
+the loss function L. We hypothesize a function
+h ∈H that maps training instances, predic-
+tor x ∈X to target y
+∈Y
+in the target
+domain TT . Hence, the instance transfer method-
+ology tries to minimize the weighted loss of
+target and source domain [60], such that, L(h) =
+LT (h) + LS(h). Since, S-TrAdaBoost.R2 relies
+on using AdaBoost.R2 unlike TTR2 [47], it has
+increased generalizability as it avoids overﬁtting
+while assigning balanced source and target weights.
+6 Conclusion
+We introduce
+S-TrAdaBoost.R2, which uses
+importance sampling combined with an unre-
+stricted weight update strategy to improve perfor-
+mance for the domain of instance transfer learning
+by an average of 12% across all datasets, and 13%
+in suﬃciently complex datasets when compared
+to its predecessor TTR2. To better characterize
+the datasets that S-TrAdaBoost.R2 performs well
+on, we provide complexity measures, CF E, DL
+and DI that employ feature correlation and ﬁtting
+a linear regressor for computation of complexity
+for distributions. Hence, we can conclude that S-
+TrAdaBoost.R2 would be well suited for complex
+real-world datasets that range in distributions, as
+well as uniformity of features. While the functional
+improvement is large, the additional overhead and
+physical changes we propose to TTR2 are mod-
+est enough that we expect S-TrAdaBoost.R2 to
+function as a drop in replacement for TTR2
+and other instance transfer methodologies in sci-
+entiﬁc data analysis pipelines. Wide adoption
+of S-TrAdaBoost.R2 will allow for accurate infer-
+ence in areas previously deemed too data-poor for
+modeling and too dissimilar for transfer, opening
+the door for new insights across complex scien-
+tiﬁc domains. We intend to release our Python
+and R implementations of S-TrAdaBoost.R2 on
+GitHub under a Creative Commons license upon
+publication.
+
+===PAGE 11===
+7 Future Work
+In the future, we want to expand our methodology
+to not employ not just instance based transfer learn-
+ing methodologies but also feature based [1, 2, 30]
+as well as parameter based techniques [34, 53].
+Although boosting transfer methodologies are
+simpler to understand than their deep learning
+counterparts, the user may suﬀer a trade oﬀin pre-
+diction accuracy for simplicity, which is not always
+preferred. We also plan to compare boosting based
+instance transfer learning methodologies to deep
+transfer learning methodologies [67]. We plan to
+explore a methodology that uses performance gap
+minimization to improve the boosting in transfer
+learning, extending on the work of [60]. Complex-
+ity of distribution also plays an important part
+in providing a glimpse of how distributions, as
+well as predictions, vary. Hence, we plan to inves-
+tigate other implications of characterizing data by
+cross-feature complexity, particularly techniques
+involving correlation to optimal tree depth for
+network learning models of data.
+References
+[1] Argyriou A, Evgeniou T, Pontil M (2006)
+Multi-task feature learning. In: Sch¨olkopf
+B, Platt J, Hoﬀman T (eds) Advances
+in
+Neural
+Information
+Processing
+Sys-
+tems,
+vol
+19.
+MIT
+Press,
+URL
+https:
+//proceedings.neurips.cc/paper/2006/ﬁle/
+0afa92fc0f8a9cf051bf2961b06ac56b-Paper.
+pdf
+[2] Argyriou A, Pontil M, Ying Y, et al (2007) A
+spectral regularization framework for multi-
+task structure learning. Advances in neural
+information processing systems 20
+[3] Asuncion A, Newman D (2007) Uci machine
+learning repository
+[4] Bashar MA, Nayak R, Suzor N (2020) Regu-
+larising lstm classiﬁer by transfer learning for
+detecting misogynistic tweets with small train-
+ing set. Knowledge and Information Systems
+pp 1–26
+[5] Bengio Y (2012) Deep learning of representa-
+tions for unsupervised and transfer learning
+texts. In: Proceedings of ICML workshop on
+unsupervised and transfer learning, pp 17–36
+[6] Blanchard G, Deshmukh AA, Dogan U,
+et
+al
+(2017)
+Domain
+generalization
+by
+marginal transfer learning. arXiv preprint
+arXiv:171107910
+[7] Branchaud-Charron F, Achkar A, Jodoin PM
+(2019) Spectral metric for dataset complexity
+assessment. In: Proceedings of the IEEE/CVF
+Conference on Computer Vision and Pattern
+Recognition, pp 3215–3224
+[8] Camilleri D, Prescott T (2017) Analysing the
+limitations of deep learning for developmental
+robotics. In: conference on Biomimetic and
+Biohybrid Systems, Springer, pp 86–94
+[9] Cao B, Pan SJ, Zhang Y, et al (2010) Adaptive
+transfer learning. In: proceedings of the AAAI
+Conference on Artiﬁcial Intelligence
+[10] Chattopadhyay R, Sun Q, Fan W, et al (2012)
+Multisource domain adaptation and its appli-
+cation to early detection of fatigue. ACM
+Transactions on Knowledge Discovery from
+Data (TKDD) 6(4):1–26
+[11] Chen L, Cai Y, Ding Y, et al (2016) Spa-
+tially ﬁne-grained urban air quality estimation
+using ensemble semi-supervised learning and
+pruning. In: Proceedings of the 2016 ACM
+International Joint Conference on Pervasive
+and Ubiquitous Computing, pp 1076–1087
+[12] Chen T, Guestrin C (2016) Xgboost: A scal-
+able tree boosting system. In: Proceedings of
+the 22nd acm sigkdd international conference
+on knowledge discovery and data mining, pp
+785–794
+[13] Cheplygina V, de Bruijne M, Pluim JP
+(2019) Not-so-supervised: a survey of semi-
+supervised, multi-instance, and transfer learn-
+ing in medical image analysis. Medical image
+analysis 54:280–296
+[14] Cortes C, Mohri M (2014) Domain adaptation
+and sample bias correction theory and algo-
+rithm for regression. Theoretical Computer
+Science 519:103–126
+
+===PAGE 12===
+13
+[15] Dai W, Yang Q, Xue GR, et al (2007) Boost-
+ing for transfer learning. In: Proceedings of
+the 24th international conference on Machine
+learning, pp 193–200
+[16] Dauphin GMY, Glorot X, Rifai S, et al (2012)
+Unsupervised and transfer learning challenge:
+a deep learning approach. In: Proceedings
+of ICML Workshop on Unsupervised and
+Transfer Learning, pp 97–110
+[17] Davis J, Domingos P (2009) Deep transfer via
+second-order markov logic. In: Proceedings of
+the 26th annual international conference on
+machine learning, pp 217–224
+[18] Day O, Khoshgoftaar TM (2017) A survey
+on heterogeneous transfer learning. Journal of
+Big Data 4(1):29
+[19] Drucker H (1997) Improving regressors using
+boosting techniques. In: ICML, pp 107–115
+[20] Du
+SS,
+Koushik
+J,
+Singh
+A,
+et
+al
+(2016)
+Hypothesis
+transfer
+learning
+via
+transformation
+functions.
+arXiv
+preprint
+arXiv:161201020
+[21] Fern´andez N, Maldonado C, Gershenson
+C (2014) Information measures of complex-
+ity, emergence, self-organization, homeostasis,
+and autopoiesis. In: Guided self-organization:
+Inception. Springer, p 19–51
+[22] Finn C, Abbeel P, Levine S (2017) Model-
+agnostic meta-learning for fast adaptation of
+deep networks. In: International Conference
+on Machine Learning, PMLR, pp 1126–1135
+[23] Freund Y, Schapire R, Abe N (1999) A short
+introduction to boosting. Journal-Japanese
+Society For Artiﬁcial Intelligence 14(771-
+780):1612
+[24] Garcke
+J,
+Vanck
+T
+(2014)
+Importance
+weighted inductive transfer learning for regres-
+sion.
+In:
+Joint
+European
+conference
+on
+machine learning and knowledge discovery in
+databases, Springer, pp 466–481
+[25] Guan Z, Li A, Zhu T (2015) Local regression
+transfer learning with applications to users’
+psychological characteristics prediction. Brain
+informatics 2(3):145–153
+[26] Han D, Liu Q, Fan W (2018) A new image clas-
+siﬁcation method using cnn transfer learning
+and web data augmentation. Expert Systems
+with Applications 95:43–56
+[27] Herath S, Harandi M, Porikli F (2017) Learn-
+ing an invariant hilbert space for domain
+adaptation. In: Proceedings of the IEEE
+conference on computer vision and pattern
+recognition, pp 3845–3854
+[28] Ho TK, Basu M (2002) Complexity measures
+of supervised classiﬁcation problems. IEEE
+transactions on pattern analysis and machine
+intelligence 24(3):289–300
+[29] Huang J, Gretton A, Borgwardt K, et al (2006)
+Correcting sample selection bias by unla-
+beled data. Advances in neural information
+processing systems 19:601–608
+[30] Jebara T (2004) Multi-task feature and ker-
+nel selection for svms. In: Proceedings of
+the twenty-ﬁrst international conference on
+Machine learning, p 55
+[31] Jing M, Ma X, Huang W, et al (2019) Task
+transfer by preference-based cost learning.
+In: Proceedings of the AAAI Conference on
+Artiﬁcial Intelligence, pp 2471–2478
+[32] Karpatne A, Ebert-UphoﬀI, Ravela S, et al
+(2018) Machine learning for the geosciences:
+Challenges and opportunities. IEEE Trans-
+actions on Knowledge and Data Engineering
+31(8):1544–1554
+[33] Katharopoulos A, Fleuret F (2018) Not all
+samples are created equal: Deep learning
+with importance sampling. In: International
+conference on machine learning, PMLR, pp
+2525–2534
+[34] Lawrence ND, Platt JC (2004) Learning to
+learn with the informative vector machine. In:
+Proceedings of the twenty-ﬁrst international
+conference on Machine learning, p 65
+
+===PAGE 13===
+[35] Lorena AC, Maciel AI, de Miranda PB,
+et al (2018) Data complexity meta-features
+for regression problems. Machine Learning
+107(1):209–246
+[36] Lv M, Li Y, Chen L, et al (2019) Air quality
+estimation by exploiting terrain features and
+multi-view transfer semi-supervised regression.
+Information Sciences 483:82–95
+[37] Ma J, Cheng JC, Lin C, et al (2019) Improv-
+ing air quality prediction accuracy at larger
+temporal resolutions using deep learning and
+transfer learning techniques. Atmospheric
+Environment 214:116,885
+[38] Maciel AI, Costa IG, Lorena AC (2016) Mea-
+suring the complexity of regression problems.
+In: 2016 International Joint Conference on
+Neural Networks (IJCNN), IEEE, pp 1450–
+1457
+[39] Mahmud M, Ray SR (2007) Transfer learning
+using kolmogorov complexity: Basic theory
+and empirical evaluations. Tech. rep.
+[40] Mei
+S,
+Zhu
+H
+(2014)
+Adaboost
+based
+multi-instance
+transfer
+learning
+for
+pre-
+dicting proteome-wide interactions between
+salmonella and human proteins. PloS one
+9(10):e110,488
+[41] Mihalkova L, Huynh T, Mooney RJ (2007)
+Mapping and revising markov logic networks
+for transfer learning. In: Aaai, pp 608–614
+[42] Ngiam J, Peng D, Vasudevan V, et al
+(2018)
+Domain
+adaptive
+transfer
+learn-
+ing with specialist models. arXiv preprint
+arXiv:181107056
+[43] Obst
+D,
+Ghattas
+B,
+Cugliari
+J,
+et
+al
+(2021) Transfer learning for linear regres-
+sion: A statistical test of gain. arXiv preprint
+arXiv:210209504
+[44] Oliver
+A,
+Odena
+A,
+Raﬀel
+C,
+et
+al
+(2018) Realistic evaluation of deep semi-
+supervised learning algorithms. arXiv preprint
+arXiv:180409170
+[45] Pan SJ, Yang Q (2009) A survey on transfer
+learning. IEEE Transactions on knowledge
+and data engineering 22(10):1345–1359
+[46] Pan W, Xiang E, Liu N, et al (2010) Transfer
+learning in collaborative ﬁltering for spar-
+sity reduction. In: Proceedings of the AAAI
+Conference on Artiﬁcial Intelligence
+[47] Pardoe D, Stone P (2010) Boosting for regres-
+sion transfer. In: Proceedings of the 27th
+International Conference on International
+Conference on Machine Learning, pp 863–870
+[48] QI Z, WANG T, SONG G, et al (2018) Deep
+air learning: Interpolation, prediction, and fea-
+ture analysis of ﬁne-grained air quality.(2018).
+IEEE Transactions on Knowledge and Data
+Engineering 30(12):2258–2297
+[49] Ramakrishnan R, Shah J (2016) Towards
+interpretable explanations for transfer learn-
+ing in sequential tasks. AAAI 2016 Spring
+Symposium
+[50] Rosenstein MT, Marx Z, Kaelbling LP, et al
+(2005) To transfer or not to transfer. In: NIPS
+2005 workshop on transfer learning, pp 1–4
+[51] Salaken SM, Khosravi A, Nguyen T, et al
+(2019) Seeded transfer learning for regression
+problems with deep learning. Expert Systems
+with Applications 115:565–577
+[52] Schuster I (2015) Gradient importance sam-
+pling. arXiv preprint arXiv:150705781
+[53] Schwaighofer A, Tresp V, Yu K (2004) Learn-
+ing gaussian process kernels via hierarchical
+bayes. Advances in neural information pro-
+cessing systems 17
+[54] Sugiyama M, Suzuki T, Nakajima S, et al
+(2008) Direct importance estimation for covari-
+ate shift adaptation. Annals of the Institute
+of Statistical Mathematics 60(4):699–746
+[55] Sun Y, Todorovic S, Li J (2006) Reducing the
+overﬁtting of adaboost by controlling its data
+distribution skewness. International Journal of
+Pattern Recognition and Artiﬁcial Intelligence
+20(07):1093–1116
+
+===PAGE 14===
+15
+[56] Swarup S, Ray SR (2006) Cross-domain knowl-
+edge transfer using structured representations.
+In: Aaai, pp 506–511
+[57] Tan C, Sun F, Kong T, et al (2018) A
+survey on deep transfer learning. In: Interna-
+tional conference on artiﬁcial neural networks,
+Springer, pp 270–279
+[58] Tang D, Yang X, Wang X (2020) Improv-
+ing the transferability of the crash prediction
+model using the tradaboost. r2 algorithm.
+Accident Analysis & Prevention 141:105,551
+[59] Taylor ME, Stone P (2009) Transfer learning
+for reinforcement learning domains: A survey.
+Journal of Machine Learning Research 10(7)
+[60] Wang B, Mendez JA, Cai MB, et al (2019)
+Transfer learning via minimizing the perfor-
+mance gap between domains. Advances in
+Neural Information Processing Systems
+[61] Wang T, Huan J, Zhu M (2019) Instance-
+based deep transfer learning. In: 2019 IEEE
+Winter Conference on Applications of Com-
+puter Vision (WACV), IEEE, pp 367–375
+[62] Wang Y, Yao Q, Kwok JT, et al (2020) Gen-
+eralizing from a few examples: A survey on
+few-shot learning. ACM Computing Surveys
+(CSUR) 53(3):1–34
+[63] Wei P, Sagarna R, Ke Y, et al (2018) Unclut-
+tered domain sub-similarity modeling for
+transfer regression. In: 2018 IEEE Interna-
+tional Conference on Data Mining (ICDM),
+IEEE, pp 1314–1319
+[64] Weiss K, Khoshgoftaar TM, Wang D (2016)
+A survey of transfer learning. Journal of Big
+data 3(1):9
+[65] Xu X, He H, Zhang H, et al (2019) Unsu-
+pervised domain adaptation via importance
+sampling. IEEE Transactions on Circuits and
+Systems for Video Technology 30(12):4688–
+4699
+[66] Yao H, Liu Y, Wei Y, et al (2019) Learn-
+ing from multiple cities: A meta-learning
+approach for spatial-temporal prediction. In:
+The World Wide Web Conference, pp 2181–
+2191
+[67] Zhang J, Ding Z, Li W, et al (2018) Impor-
+tance weighted adversarial nets for partial
+domain adaptation. In: Proceedings of the
+IEEE conference on computer vision and
+pattern recognition, pp 8156–8164
+[68] Zhang K, Zhang H, Liu Q, et al (2019)
+Interactive attention transfer network for
+cross-domain sentiment classiﬁcation. In: Pro-
+ceedings of the AAAI Conference on Artiﬁcial
+Intelligence, pp 5773–5780
+[69] Zhao P, Zhang T (2015) Stochastic optimiza-
+tion with importance sampling for regularized
+loss minimization. In: international conference
+on machine learning, PMLR, pp 1–9
+[70] Zhuang F, Qi Z, Duan K, et al (2020) A
+comprehensive survey on transfer learning.
+Proceedings of the IEEE 109(1):43–76
+[71] Zuo H, Zhang G, Pedrycz W, et al (2016)
+Fuzzy regression transfer learning in takagi–
+sugeno fuzzy models. IEEE Transactions on
+Fuzzy Systems 25(6):1795–1807
