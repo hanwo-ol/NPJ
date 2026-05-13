@@ -360,3 +360,35 @@ S-TrAdaBoost.R2는 전이 학습의 **"방법"**을, 드리프트 모델은 전�
 | 3 | L2 거리가 적절한가? | 피처 스케일 차이 크면 표준화 후 계산 또는 마할라노비스 거리 |
 | 4 | LightGBM이 호환되는가? | 논문은 단일 트리 사용. 각 라운드에서 단일 트리 or 소규모 앙상블 결정 필요 |
 | 5 | 인용 시 주의점? | arXiv 프리프린트. 정식 피어 리뷰 미완료 → "프리프린트" 명시 |
+
+---
+
+## 9. 차주 실험 계획 및 통계적 검증 (Hypothesis Testing)
+
+본 문서에서 제안한 S-TrAdaBoost.R2 도입 및 개선안의 타당성을 입증하기 위해, 다음 주에 수행할 20-fold 교차 검증(CV) 결과 기반의 통계적 가설 검정(Statistical Hypothesis Testing) 계획입니다. 모든 검정은 검정의 3요소(H0/H1, Test Statistic, p-value)를 엄밀히 따릅니다.
+
+### 실험 1: 메인 성능 비교 (S-TrAdaBoost.R2 vs. 기존 TTR2)
+* **목적:** 비제약적 가중치 업데이트와 필터링 메커니즘이 기존 TTR2의 한계를 극복했는지 검증합니다.
+* **가설 (단측 검정):**
+  - **귀무가설($H_0$):** $\text{RMSE}_{\text{S-TTR2}} \ge \text{RMSE}_{\text{TTR2}}$ (제안 모델이 기존 모델과 차이가 없거나 오히려 더 나쁘다)
+  - **대립가설($H_1$):** $\text{RMSE}_{\text{S-TTR2}} < \text{RMSE}_{\text{TTR2}}$ (제안 모델의 예측 오차가 통계적으로 유의미하게 작다)
+* **Test Statistics (검정 통계량):** Paired t-test (대응표본 t-검정). 20-fold CV의 각 폴드(Fold)별로 산출된 두 모델의 RMSE 쌍(Pair) 20개를 비교합니다. (정규성 불만족 시 Wilcoxon signed-rank test 사용)
+* **p-value:** $p < 0.05$ (유의수준 5% 미만일 때 $H_0$ 기각 및 성능 우위 확정)
+
+### 실험 2: Negative Transfer 해소 검증 (vs. Target-Only)
+* **목적:** 방대한 T1D 소스 데이터 유입이 타겟 성능을 깎아먹는 '음의 전이'를 방지했는지 검증합니다.
+* **가설 (단측 검정):**
+  - **귀무가설($H_0$):** $\text{RMSE}_{\text{S-TTR2}} \ge \text{RMSE}_{\text{Target-Only}}$ (전이 학습을 한 것이 타겟 데이터 100명만으로 훈련한 것과 같거나 나쁘다 = Negative Transfer 발생)
+  - **대립가설($H_1$):** $\text{RMSE}_{\text{S-TTR2}} < \text{RMSE}_{\text{Target-Only}}$ (전이 학습을 통해 소규모 타겟 데이터의 한계를 극복했다)
+* **Test Statistics:** Paired t-test (20-fold CV RMSE 결과 사용)
+* **p-value:** $p < 0.05$
+
+### 실험 3: Variance Injection (k-Center)의 절제 연구 (Ablation Study)
+* **목적:** 소스 데이터의 대표 인스턴스(k명)를 타겟 풀에 병합하여 분산을 주입한 것이 실제로 Target Overfitting 방지에 기여하는지 검증합니다.
+* **가설 (단측 검정):**
+  - **귀무가설($H_0$):** $\text{RMSE}_{\text{w/ k-Center}} \ge \text{RMSE}_{\text{w/o k-Center}}$ (분산 주입이 성능 개선에 기여하지 않는다)
+  - **대립가설($H_1$):** $\text{RMSE}_{\text{w/ k-Center}} < \text{RMSE}_{\text{w/o k-Center}}$ (분산 주입을 적용한 모델의 예측 오차가 유의미하게 더 작다)
+* **Test Statistics:** Paired t-test (20-fold CV RMSE 결과 사용)
+* **p-value:** $p < 0.05$
+
+> **차주 Action Item:** 위 3가지 검정 결과에 대한 p-value 리포트 및 $R^2$ 신뢰구간(Confidence Interval) 박스플롯(Boxplot)을 산출하여 제출해야 합니다.
