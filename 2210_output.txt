@@ -1,0 +1,1349 @@
+Robust angle-based transfer learning in high dimensions
+Tian Gu1, Yi Han2, and Rui Duan3,†
+1 Department of Biostatistics, Columbia Mailman School of Public Health, New
+York, NY 10032, USA
+2 Department of Statistics, Columbia University, New York, NY 10027, USA
+3Department of Biostatistics, Harvard T.H. Chan School of Public Health,
+Boston, MA 02115, USA
+† Corresponding author: rduan@hsph.harvard.edu
+Abstract
+Transfer learning enhances the performance of a target model by leveraging data from
+related source populations, a technique particularly beneficial when target data is scarce.
+This study addresses the challenge of training high-dimensional regression models with
+limited target data, in the context of heterogeneous source populations. We consider a
+practical setting where only the parameter estimates of the pre-trained source models
+are accessible, instead of the individual-level source data. Under the setting with only
+one source model, we propose a novel flexible angle-based transfer learning (angleTL)
+method, which leverages the concordance between the source and the target model pa-
+rameters. We showed that the proposed angleTL is adaptive to the signal strength of
+the target model, unifies several benchmark methods by construction, and can prevent
+negative transfer when between-population heterogeneity is large. We also provide al-
+gorithms to effectively incorporate multiple source models accounting for the fact that
+some source models may be more helpful than others. Our high-dimensional asymptotic
+analysis provides interpretations and insights on when a source model can be useful for
+the target, and demonstrates the superiority of angleTL over other benchmark methods.
+We perform extensive simulation studies to validate our theoretical conclusions and show
+the feasibility of applying angleTL to transferring existing genetic risk prediction models
+across multiple biobanks.
+1
+arXiv:2210.12759v4  [stat.ME]  10 Nov 2023
+1
+Introduction
+Insufficient training data presents a critical challenge across various domains. In finance, the scarcity
+of comprehensive user credit histories hampers efforts in evaluating individual financial risk and de-
+tecting fraud (Teja, 2017).
+Similarly, in precision medicine, the limited availability of medical
+records, especially for studying rare diseases or minority and disadvantaged sub-populations, com-
+promises both the fairness and clinical efficacy of treatments (Jia and Shi, 2017; Kim and Milliken,
+2019). These constraints highlight an urgent need for innovative approaches that can enhance model
+performance in the face of data limitations (Viele et al., 2014; Li and Song, 2020; Yang and Kim,
+2020).
+When borrowing information from external sources, a major challenge is to account for the
+potential data heterogeneity. The external data may likely be collected from a different population
+with diverse characteristics (Chen et al., 2020) or be historical data where the variable definitions
+and measures may change over time (Mansukhani et al., 2019; Mitchell et al., 2021). Many data
+integration methods are proposed to leverage potentially shared information across populations
+while addressing data heterogeneity.
+For example, some methods are based on re-weighting or
+re-sampling the source data such that they are more similar to the target (Huang et al., 2006;
+Pan et al., 2010; Long et al., 2013); some methods assume there is a unique lower dimensional
+representation of features across populations, which can be transferred from the source to the
+target (Tzeng et al., 2014; Ganin and Lempitsky, 2015; Sun and Saenko, 2016); some methods
+propose to use the target data to calibrate the source models (Girshick et al., 2014; Li et al., 2020;
+Gu et al., 2023a). In situations where no data from the target population is available, methods
+have been proposed to combine source models aiming for distributional robustness by optimizing
+for the worst-case performance, assuming the target population can be represented as either a
+single source or a mixture of source populations (Meinshausen and B¨uhlmann, 2015; Wang et al.,
+2023). The performance of many of the aforementioned methods largely depends on whether the
+underlying assumptions regarding the similarity between the source and the target populations
+hold, which is usually unknown in practice. Therefore, it is desired to develop methods that can be
+adaptive to the underlying data heterogeneity or at least prevent the case where incorporating the
+source information leads to worse model performance than not including it, known as the “negative
+transfer” phenomenon (Weiss et al., 2016).
+In addition, there might be data-sharing constraints such that external sources cannot share
+individual-level data with the target study. Federated or distributed algorithms are proposed to
+overcome such data-sharing barriers by sharing only summary-level statistics across studies, many
+of which rely on sharing the gradients or higher-order derivatives of objective functions (Duan
+et al., 2018, 2020, 2022; Cai et al., 2021; Li et al., 2021) and may require iteratively sharing updated
+summary statistics across datasets (Li et al., 2021). However, distributed and federated learning
+are less feasible without a collaborative environment or certain infrastructures that enable efficient
+computing and timely information sharing. In contrast, pre-trained models from existing studies are
+often more accessible. With increasing attention to reproducibility and open science, more journals
+require studies to publish their results as supplementary materials or to make them shareable upon
+request (Thompson et al., 2006; Roobol et al., 2012). Many platforms allow direct implementation
+(Belbasis and Panagiotou, 2022) or validation of fitted models on secure collaborative platforms
+2
+such as PheKB (Kirby et al., 2016) and FATE (Liu et al., 2021). There is an increasing need for
+data integration methods that can directly leverage fitted models to improve the model performance
+of a target study.
+Regression models are broadly applied in many fields, due to advantages such as simplicity,
+computational efficiency, and interpretability (Hafemeister and Satija, 2019; Wynants et al., 2020;
+Wu et al., 2020), and they are also the building blocks of many data analysis pipelines and tools
+(Van Buuren et al., 2006; Tan, 2006).
+In this paper, we consider the problem of incorporating
+pre-trained regression models from external sources to help train a target model with limited target
+data. For the i-th subject in the target data, let Yi ∈R denote the outcome variable of interest and
+Xi ∈Rp denote a set of p-dimensional covariates. We consider
+Yi = X⊤
+i β + ϵi,
+for i ∈{1, . . . , n}
+where ϵi ∈R is the random noise with mean zero and variance σ2, β ∈Rp is the regression coefficient
+of interest, and n is the target sample size. In addition to the target data, we observe a source model
+fitted on an external source dataset, where we observe the source estimate ˆw ∈Rp of the underlying
+regression coefficient w in the source population. In the case where the underlying coefficients β and
+w show certain similarities, we hope to leverage ˆw to assist the estimation of the target parameter
+β.
+Similar problems have been considered in the literature. In a series of transfer learning work,
+the source model estimate ˆw was incorporated through a regularization with the form ∥β −ˆw∥q,
+for some positive constant q. For example, Li et al. (2020) proposed the transLASSO algorithm
+that leverages the source data by adding a penalty term ∥β −ˆw∥1 when learning β using the
+target data. Later, transLASSO has been extended to generalized linear models (Tian and Yang,
+2022), functional linear regression (Lin and Reimherr, 2022), and Q-learning (Chen et al., 2022).
+Considering data sharing constraints, Li et al. (2021) proposed a federated learning approach by
+sharing gradients and Hessian matrices, and Gu et al. (2023b) proposed a method to incorporate
+information from fitted models through a synthetic data approach. Similar ideas are also used in
+multi-tasking learning literature, where L2-norm-based penalties, i.e., ∥β −w∥2, are introduced to
+leverage the similarities between model parameters (Tian et al., 2022; Duan and Wang, 2022). The
+underlying similarity assumption of these methods is that the Lq distance between β and w is small,
+and we refer to this class of methods as the distance-based transfer learning methods.
+In real-world applications, the distance-based transfer learning methods may be less effective
+when β and w are highly concordant, but their distance may not be small.
+For example, the
+source outcome may be defined differently from the target outcome (categorical versus continuous
+characterization of the same outcome), or there might be standardization procedures applied to the
+source data that are unknown to us. The source model might be fitted using a different but related
+outcome variable correlated with the target outcome (Miglioretti, 2003; Stearns, 2010). To leverage
+the concordance between the model parameters, several alternative similarity characterizations are
+proposed. For example, Li et al. (2014) proposed a bivariate ridge regression assuming the j-th
+entries (βj, wj) follows a bivariate normal distribution with shared correlation ρ for all j ∈[p].
+Similarly, Maier et al. (2014) proposed a multi-trait prediction method, assuming multivariate
+normally distributed random effects to leverage shared genetic architectures across traits. Qiao
+et al. (2019) proposed a method for multi-objective optimization problems. Liang et al. (2020)
+3
+proposed a calibration version of transLASSO, which allows the scale of the model parameters to
+differ. However, these methods require individual-level data from the source and their robustness is
+unclear when the level of data heterogeneity is high.
+In this paper, we propose an angle-based Transfer Learning approach, named angleTL, which
+leverages the similarity of two regression models through a novel penalization obtained by decou-
+pling the angle distance between β and w. As a consequence, angleTL adapts to signal strength
+and inherently guards against negative transfer, offering a simpler form both conceptually and com-
+putationally. Our approach unifies distance-based transfer learning, target-only and source-only
+estimators as specific instances, and thus is guaranteed to have superior performance. The high-
+dimensional asymptotic analysis provides a precise characterization of the prediction risk, illustrat-
+ing the bias-variance trade-off, the influence of signal strengths, the similarity between source and
+target, the noise level, and the estimation error of the source to the accuracy of the final estimator.
+Given multiple source models, we propose methods to effectively incorporate them toward better
+predictive performance in the target population. The proposed methods only require parameter
+estimates of fitted source models, which are more accessible in practice. We perform extensive sim-
+ulation studies to validate our theoretical conclusions and evaluate the performance of angleTL by
+training genetic risk models for low-density lipoprotein cholesterol (LDL) using data from multiple
+large-scale biobanks.
+2
+Angle-based transfer learning
+Let Y ∈Rn denote the outcome variable of interest and X ∈Rn×p denote a set of p-dimensional
+covariates in the target data of size n. Without borrowing information from the source, we can
+obtain a target-only estimator of β through a ridge regression,
+˜βλ = arg min
+β
+1
+n∥Y −Xβ∥2
+2 + λ∥β∥2
+2,
+(1)
+where λ is a tuning parameter. The penalty on ∥β∥2
+2 helps reduce the overall mean squared error
+of the estimator in the high-dimensional setting (Hastie et al., 2009).
+Suppose that we also observe ˆw ∈Rp, the parameter estimates of a source model fitted on an
+external source dataset with a sample size potentially much larger than n. Due to data heterogeneity,
+the two underlying regression coefficients, β and w, may not be the same but may share certain
+similarities, and hence ˆw can be used to guide the estimation of β. Following a series of recent
+transfer learning methods (Li et al., 2022, 2021; Gu et al., 2023b), we define the L2-distance-based
+transfer learning estimator (distTL) to be
+ˇβλd = arg min
+β
+1
+n∥Y −Xβ∥2
+2 + λd∥β −ˆw∥2
+2,
+(2)
+where λd is a tuning parameter. Imposing a distance-based penalty, ∥β −ˆw∥2, is equivalent to
+adding a constraint ∥β −ˆw∥2 ≤h, which reduces the parameter space to an L2 ball centered at ˆw
+as shown in panel A of Fig. 1. Anchoring on the source estimator ˆw, distTL encourages estimators
+closer to ˆw while allowing for the calibration of potential differences.
+As introduced earlier, in real-world applications, it is possible that β and w are concordant to
+some degree, but ∥β −w∥2 is not small. In such cases, distTL may be less effective and we may
+4
+Figure 1: Geometric illustration of the distance-based similarity characterization (A); the angle-
+based characterization (B); and the situation where the distance-based transfer learning have the
+same predictive risk as the proposed method (C).
+consider a more general characterization of the similarity using the angle distance characterized
+by sin Θ(w, β) =
+q
+1 −
+(w⊤β)2
+∥w∥2
+2∥β∥2
+2 . As shown in panel B of Fig.1, if the target model parameter
+β is restricted by a constraint that sin Θ(β, w) ≤d, the source model parameter w can provide
+directional information of β and reduce the parameter space of β to a cone. When w and β are
+small in L2 distance, it also implies that the angle between the two vectors is small, while it may
+not be true the other way around.
+Instead of directly penalizing on sin Θ( ˆw, β) =
+q
+1 −
+( ˆw⊤β)2
+∥ˆw∥2
+2∥β∥2
+2 which may lead to computational
+complexity, we consider an alternative angle-based transfer learning estimator defined as
+ˆβλ,η = arg min
+β
+1
+n∥Y −Xβ∥2
+2 + λ∥β∥2
+2 −2η ˆw⊤β,
+(3)
+where λ and η are tuning parameters. To see the connection between the proposed penalty terms
+and the sin Θ distance, without loss of generality, we can consider ∥ˆw∥2
+2 = 1. Due to the duality
+of constrained optimization and penalization, the penalty on sin Θ( ˆw, β) is equivalent to having a
+constraint
+q
+1 −( ˆw⊤β)2
+∥β∥2
+2
+< a for some a, which can be written as
+ˆw⊤β
+∥β∥2 >
+√
+1 −a2. While this con-
+straint controls the term ˆw⊤β
+∥β∥2 , what we propose is to decouple its numerator and denominator, and
+introducing two separate constraints ˆw⊤β > b (equivalent to −ˆw⊤β < −b) and ∥β∥2 < c (equiva-
+lent to ∥β∥2
+2 < c2). While this decoupling provides computational simplicity and efficiency, the set
+β : ˆw⊤β > b, ∥β∥2 < c may not necessarily include, or be included in, the set β :
+q
+1 −( ˆw⊤β)2
+∥β∥2
+2
+< a,
+when b and c are two freely adjustable tuning parameters. So the proposed penalization is not
+equivalent to or is a relaxation of the sin Θ penalty.
+The proposed penalization has several advantages. First, given λ and η, Equation (3) has a
+closed-form solution ˆβλ,η = (X⊤X+nλIp)−1(X⊤Y+nη ˆw), which ensures computational efficiency.
+Secondly, it is adaptive to the signal strength of the target parameter. Specifically, when ∥β∥2 is
+large, the constraint ˆw⊤β > b can be satisfied for β’s with large sin Θ distance with ˆw. In this
+scenario, the angle constraint is relatively minimal, and less information is borrowed from the
+source. Conversely, when ∥β∥2 is small, there is a tighter constraint on the angle distance, which
+results in borrowing more information from the source. Intuitively, with a sufficiently strong signal,
+5
+relying more on target data can yield precise estimations. However, in situations with weak signal
+strength, and given that the target sample size might be limited, there is a greater need to leverage
+information from the source. The adaptivity to the signal strength is verified in our theoretical
+analysis discussed in Section 3. On the contrary, the penalty
+q
+1 −( ˆw⊤β)2
+∥β∥2
+2
+takes the same value
+for all β’s having the same sin Θ distance with ˆw regardless of the signal strength ∥β∥2. Thirdly,
+although our proposed penalty is termed as angle-based penalty, it allows borrowing information
+from the source through both the angle similarity and the L2 similarity, whereas the sin Θ penalty
+only focuses on the angle similarity. To see this, the penalty terms we proposed can be written
+equivalently as the following
+λ∥β∥2
+2 −2ηβ⊤ˆw = λ∥β −ˆw∥2
+2 −2(η −λ)β⊤ˆw −λ∥ˆw∥2
+2
+where the third term on the right-hand side will not influence the choice of β in the optimization.
+We denote the first two terms as P1(β; ˆw) = λ∥β −ˆw∥2
+2 and P2(β; ˆw) = 2(η −λ)β⊤ˆw. With fixed
+signal strength, the second term P2 encourages the estimator of β to be more concordant to ˆw,
+allowing information from the source estimator ˆw through the angle similarity; With a fixed angle
+distance, P1 will then encourage the estimator of β to be closer to w in L2 distance, allowing borrow
+information from the L2 similarity. Moreover, angleTL incorporates several estimators as special
+cases: (i) when η = 0, ˆβλ,η reduces to the target-only estimator shown in Equation (1), (ii) when
+η = λ, ˆβλ,η becomes distTL in Equation (2), since the optimization remains the same if we add an
+additional β-independent term λ∥ˆw∥2
+2, i.e., λ∥β∥2
+2 −2λ ˆw⊤β + λ∥ˆw∥2
+2 = λ∥β −ˆw∥2
+2; and (iii) if λ
+and η are both extremely large, the penalty term −2η ˆw⊤β will dominate and result in β ≈c ˆw, the
+same as rescaling the source estimator by a constant c.
+Using cross-validation, we can select the optimal λ and η from a grid covering a proper range.
+As one of the main advantages of the proposed method, in light of the above discussions, we expect
+that under suitable conditions, the numerical performance of angleTL will be no worse than the
+target-only, source-rescaling, or distTL. In particular, the guaranteed performance no worse than
+the target-only method implies that our method automatically prevents negative transfer without
+needing a validation dataset, which has great benefits in practice.
+From the perspective of bias-variance trade-off, we see that when λ = η = 0, our estimator ˆβλ,η
+reduces to the ordinary least square estimator, which is an unbiased estimator of β. On the other
+extreme, if λ goes to infinity faster than η, ˆβλ,η converges to 0, which has large bias and small
+variance. The contribution of η to the bias-variance trade-off depends on the underlying similarity
+between w and β. When ˆw = β, if choosing η = λ and letting η →∞, ˆβλ,η converges to β. In
+more realistic cases when ˆw ̸= β, there exists an optimal η and λ which minimize the mean square
+error (MSE). In Section 3, we will elaborate on these points under a rigorous theoretical framework,
+and provide precise characterizations of angleTL’s performance, revealing its scope of applicability
+and the advantages over alternative approaches.
+3
+Predictive risk and theoretical justifications
+In this section, we study the predictive risk of ˆβλ,η in Equation (3). For a given choice of λ and η,
+we denote the prediction risk by
+rλ,η(X) = E{(x⊤ˆβλ,η −y)2|X}
+6
+where X is the training data, and the expectation is taken over an independent test data point
+(x, y), from the same distribution as the training data.
+Given λ and η, we denote R(λ, η) =
+lim(n,p)→∞rλ,η(X), the limiting prediction risk as the training sample size n and the dimension p
+go to infinity. Our theoretical analysis is based on the following assumptions.
+Assumption 1. (High-Dimensional Asymptotics)
+(a) The dimension of the model, p, goes to infinity as n goes to infinity, with p
+n →γ ∈(0, ∞).
+(b) The covariate variables of each observation in the target population are identically and in-
+dependently distributed with mean zero and covariance matrix Σ ∈Rp×p, which is positive
+semidefinite.
+(c) The cumulative distribution function of the eigenvalues, i.e., the spectral distribution, FΣ of
+Σ converges to a limit population spectral distribution on the support [0, ∞).
+Assumption 2. (Random Regression Coefficients) The target regression coefficients, β ∈Rp,
+are random with E[β] = 0, and V ar[β] = α2
+t
+p Ip. The source coefficient w are random with E[w] = 0
+and V ar[w] = α2
+s
+p Ip. The coefficients β and w satisfy Cov(β, w) = ραtαs
+p
+Ip.
+Assumption 3. (Source Estimation Error) The obtained source estimator ˆw can be decomposed
+as ˆw = w + δ, where δ is some sub-Gaussian estimation error vector independent of w and β, with
+E[δδ⊤] = 1
+pΣδ. We assume that as (n, p) →∞, the eigenvalues of Σδ is supported on [CL, CU] for
+some constants CU ≥CL ≥0.
+A few remarks on the above assumptions are in order. In general, these assumptions together
+help us leverage results from random matrix theory to compute the prediction risk of the proposed
+method, and enable rigorous comparisons with alternative methods. In particular, Assumption 1(a)
+concerns the limit of the ratio p
+n as n →∞, reflecting the high-dimensional nature of the problem.
+Assumption 1(b) is a mild condition on the design matrix, which requires independent samples
+but allows general correlations among high-dimensional covariates. Assumption 1(c) ensures the
+existence of proper limit for the eigenvalues of the underlying covariance matrix Σ as p →∞, which
+can be satisfied by a large class of covariance matrices with diagonal, exchangeable, or auto-regressive
+structures (Bai and Silverstein, 2010). Assumption 2 is a random-effect hypothesis assuming that
+the true effect size of each feature is drawn independently at random, and the overall signal strength
+captured in the target (source) model is characterized by the quantity α2
+t (α2
+s), where E∥β∥2
+2 = α2
+t
+and E∥w∥2
+2 = α2
+s. This hypothesis enables us to study the precise predictive risk for angleTL, distTL,
+and target-only estimator, and draw clear insight on factors influencing their relative performance.
+Such a random-effect assumption is commonly seen in high-dimensional statistics and applications
+to genetic risk prediction (Dobriban and Wager, 2018; Li et al., 2014; Vilhj´almsson et al., 2015).
+Finally, Assumption 3 characterizes the estimation error of the source estimate ˆw for estimating
+w. Depending on the correlation structure of the features, as well as the method used to obtain ˆw,
+the estimation error δ may be biased or correlated, and we quantify the magnitude of the error by
+the upper and lower bounds of eigenvalues, i.e., CL and CU. While these assumptions facilitate the
+theoretical analysis, our method can be applied to various other settings.
+Before stating our main theorem, we define a complex function v(z) : C \ R+ →C, which
+plays an important role in our description of the prediction risk R(λ, η). Specifically, according to
+7
+Assumption 1, the spectral distribution of the n × n matrix 1
+nXX⊤has a limit, which we denote as
+FΣ. In particular, FΣ is related to FΣ in Assumption 1(c) via the equation
+FΣ(x) −γFΣ(x) = (1 −γ)1{x = 0}.
+We define v(z) to be the Stieltjes transform of the probability measure FΣ, i.e.,
+v(z) :=
+Z ∞
+0
+dFΣ(x)
+x −z ,
+z ∈C \ R+.
+Theorem 1. Under Assumptions 1-3, as n →∞, the limiting expected predictive risk R(λ, η)
+satisfies
+R(λ, η, CL) ≤R(λ, η) ≤R(λ, η, CU),
+where
+R(λ, η, C) := (λ2α2
+t + η2α2
+s + η2C −2ληραtαs)v(−λ) −λv′(−λ)
+γ(λv(−λ))2
++ σ2v′(−λ)
+v(−λ) .
+The minimal risk R∗= minλ,η R(λ, η) under the optimal choice of tuning parameters satisfies
+σ2
+λ∗
+Lv(−λ∗
+L) ≤R∗≤
+σ2
+λ∗
+Uv(−λ∗
+U),
+where λ∗
+L =
+γσ2
+α2
+t (1−
+ρ2α2s
+α2s+CL ) and λ∗
+U =
+γσ2
+α2
+t (1−
+ρ2α2s
+α2s+CU ).
+The proof of the above theorem can be found in Appendix 1 of the Supplementary Material,
+which relies on the asymptotic theory of eigenvalues of large random matrices and in particular the
+theoretical framework developed by (Dobriban and Wager, 2018) for the analysis of ridge-penalized
+linear regression and linear discrimination analysis. Similar techniques have been used for the precise
+analysis of many other high-dimensional problems such as covariance matrix estimation (Ledoit and
+Wolf, 2015; Cai et al., 2020), low-rank matrix denoising (Donoho and Gavish, 2014), sketching and
+random projection (Yang et al., 2021), etc.
+Theorem 1 provides upper and lower bounds for the limiting prediction risk R(λ, η) as a func-
+tion of the parameters λ and η.
+The possible range of R(λ, η) is rooted in the variability of
+the source estimator ˆw.
+More specifically, the upper and lower bounds for R(λ, η) are deter-
+mined by the spectrum of Σδ in Assumption 3, which in general decreases as the estimation
+error δ becomes smaller.
+In addition, the difference between the upper and the lower bounds
+R(λ, η, CU) −R(λ, η, CL) = (CU−CL)η2[v(−λ)−λv′(−λ)]
+γ(λv(−λ))2
+depends on the spectral range (CU −CL) of
+Σδ, which becomes smaller when the components of δ are less heteroskedastic or less correlated.
+For example, if Σδ = Ip, we have CU = CL.
+Moreover, the minimal risk R∗lies in the interval [
+σ2
+λ∗
+Lv(−λ∗
+L),
+σ2
+λ∗
+Uv(−λ∗
+U)]. To better understand
+its implications, we consider a few special scenarios of interest, and assume for simplicity that the
+population spectral distribution FΣ is supported on a set bounded away from zero and infinity and
+CL = CU = C. In this case, our predictive risk is precise with R∗=
+σ2
+λ∗v(−λ∗) where λ∗=
+γσ2
+α2
+t (1−
+ρ2α2s
+α2s+C )
+and η∗= λ∗ραtαs
+α2
+s+C . On the one hand, when the target signal strength is very large, i.e., α2
+t →∞,
+we have that
+R∗→
+σ2
+1 −γ ,
+when γ < 1
+(4)
+8
+and
+R∗=
+α2
+t(1 −ρ2α2
+s
+α2s+C )
+γv(0)
+(1 + o(1)),
+when γ > 1.
+(5)
+When γ < 1 (p < n) and α2
+t →∞, the prediction risk reduces to that of the ordinary least squares,
+and is independent of the covariance Σ and the source data (such as ρ, α2
+s, or C). When γ > 1
+(p > n), the limiting error as α2
+t →∞depends on the covariance Σ through v(0), and the source
+estimator through 1 −
+ρ2α2
+s
+α2s+C .
+In the special case where Σ = Ip, we have v(0) =
+1
+γ−1, so that
+the prediction risk decreases when the sample size increases, when the source-target similarity ρ2
+increases, or when the relative source estimation error
+C
+α2s decreases. On the other hand, when the
+target signal strength is very small, i.e., α2
+t →0, we have
+R∗= σ2 + σ2α2
+t(1 −
+ρ2α2
+s
+α2s + C )T(1 + o(1)),
+(6)
+where T = limn→∞1
+ptr(Σ), so that the difficulty of the prediction is determined to the first order
+by the average variance of the covariates and the source data, which no longer depends on γ.
+Another scenario of interest is when the source data has strong signal-to-noise ratio or contains
+extremely large sample size such that the estimation error of source model is negligible, i.e.,
+α2
+s
+α2s+CU →
+1.
+Under the optimal choice of tuning parameters λ∗=
+γσ2
+α2
+t (1−ρ2) and η∗= λ∗ρ αt
+αs , we obtain
+R∗
+0 =
+σ2
+λ∗v(−λ∗). In particular, in the case with no estimation error, i.e., CU = 0, the limiting risk is
+R(λ, η) = (λ2α2
+t + η2α2
+s −2ληραtαs)v(−λ) −λv′(−λ)
+γ(λv(−λ))2
++ σ2 v′(−λ)
+v(−λ) .
+(7)
+The proofs of Equations (4) to (7) can be found in the Supplementary Material.
+The significance of Theorem 1 also lies in its implications on the practical benefits of the proposed
+method.
+On the one hand, it suggests that angleTL can automatically avoid negative transfer
+due to imprecise or low-quality source estimators, with performance no worse than the target-only
+estimator. Specifically, the limiting predictive risk of the target-only estimator ˜βλ has been obtained
+in Dobriban and Wager (2018), which has a minimum risk R† =
+σ2
+λ†v(−λ†) under the optimal choice
+of tuning parameters λ† = γ σ2
+α2
+t . As a comparison, the minimal risk R∗of the angleTL estimator
+is always smaller than R†. To see this, we first notice that R∗is bounded by R∗
+U =
+σ2
+λ∗
+Uv(−λ∗
+U).
+Since
+1
+λv(−λ) is monotonically decreasing with λ, and that λ† = γ σ2
+α2
+t ≤λ∗=
+γσ2
+α2
+t (1−
+ρ2α2s
+α2s+CU ) for any
+ρ ≥0, α2
+s ≥0 and CU > 0, we have that R∗≤R∗
+U ≤R†.
+This indicates that the angleTL
+estimator safeguards against negative transfer because angleTL is always no worse than the target-
+only estimator, even when source has a large distance to the target (i.e., ρ is small), or the estimation
+error is large (i.e.,
+α2
+s
+α2s+CU is small). The same property is achieved in Li et al. (2020) and Li et al.
+(2021) using an independent validation dataset, which is not required in our method.
+Furthermore, angleTL is expected to have better performance than distTL. Specifically, since
+distTL is obtained by setting λ = η, under the current framework, its predictive risk is higher than
+the predictive risk of angleTL, as R∗is optimized in a two dimensional space that covers λ = η. In
+the extreme case where ˆw = w, we see that λ∗= η∗if and only if ρ αt
+αs = 1. Since α2
+t = E∥β∥2
+2 and
+α2
+s = E∥w∥2
+2, αt and αs can be viewed as the vector lengths of β and w, respectively. Intuitively,
+one would think that distTL requires the lengths of two vectors to be roughly the same, or αt = αs,
+9
+to achieve the good performance. However, the optimal choices of λ and η demonstrates that this
+is not necessarily the case. Since ρ is the cosine of the angle between the two vectors, it implies
+that distTL is optimal if and only if the difference vector β −w is orthogonal to w, as shown
+in panel C of Fig. 1. This is a rather strong assumption which may be rarely satisfied in real
+applications. In contrast, the proposed angleTL depends only on the angle between the source
+and target parameters. This explains the flexibility and the potential advantage of our angle-based
+method.
+4
+Incorporating multiple source models
+In this section, we consider the setting where multiple source models are available, denoted as
+{ ˆwk}k=1,...,K, and we want to incorporate these source models when fitting a model using the
+internal target data. In the existence of multiple sources, we hope that our estimator obtained from
+transfer learning is robust to the cases where some source models are less helpful than others.
+One direct extension of angleTL is to include multiple penalty terms, one for each source esti-
+mates ˆwk, and obtain
+ˆβλ,η1...,ηK = arg min
+β
+1
+n∥Y −Xβ∥2
+2 + λ∥β∥2
+2 −2
+K
+X
+k=1
+ηk ˆw⊤
+k β,
+which consists of K+1 tuning parameters, λ and {ηk}k=1,...,K. However, this might be computation-
+ally less feasible when K is large, since optimization involving a large number of tuning parameters
+will be challenging in terms of computational speed and numerical stability. Intuitively, if we can
+derive an aggregated source estimator, denoted as ˆw, that resides within the convex cone formed
+by the source models, i.e., ˆw ∈{PK
+i=1 θk ˆwk : θk ≥0}, and aligns more closely with the target
+parameter β than any individual ˆwk, then we can directly utilize the single source angleTL method
+detailed in Section 2.
+Following this idea, we present in this section two approaches to obtain the aggregated estima-
+tor ˆw from the K source estimators { ˆwk}k=1,...,K, where the main difference between them lies
+in whether an independent validation dataset in addition to the training data is needed for the
+aggregation step. In the existence of an independent validation dataset, we can use it to learn the
+weights θ = (θ1, . . . , θk) that linearly combine { ˆwk}k=1,...,K to obtain the aggregated estimator ˆw.
+This can be achieved via methods such as the Q-aggregation, summarized in Algorithm 1 below,
+which is shown to approximate the best linear combination of all models when the validation data
+is sufficiently large (Rigollet and Tsybakov, 2011; Tsybakov, 2014; Lecu´e and Rigollet, 2014). If
+we have evidence where some of the source models can be highly different from the target, we can
+further impose sparse structures on θ.
+Alternatively, one could consider using the following spectral approach, summarized in Algorithm
+2, to obtain an aggregated ˆw without a validation dataset. Specifically, we first normalize each ˆwk
+to obtain ¯wk =
+ˆwk
+∥ˆwk∥2 , and define ¯
+W = [ ¯w⊤
+1 , ¯w⊤
+2 , . . . , ¯w⊤
+K]⊤∈RK×p. Let u1 be the first eigenvector
+of ¯
+W ¯
+W⊤∈RK×K, and define ˆs = (ˆs1, ..., ˆsK) = |u1|, the absolute value of u1. We propose to use ˆs
+as the weights for aggregating the K normalized source estimates. Then the final adaptive weighted
+source estimates is defined as ˆw = PK
+k=1 ˆsk ¯wk. Intuitively, this approach can be considered as
+carrying out a principal component (PC) analysis on the matrix ¯
+W that combines all the source
+10
+Algorithm 1: Obtain ˆw from a validation dataset
+Data: Source estimates { ˆwk}k=1,...,K and a validation dataset {˚
+X, ˚
+Y}
+Obtain the weights ˆθ = (ˆθ1, . . . , ˆθK)⊤by: ˆθ = arg minθ ||˚
+Y −˚
+X(PK
+k=1 θk ˆwk)||2
+2 + λθP(θ),
+subject to θ ≥0, where λθP(θ) can be added to enforce sparsity or other desirable
+structures.
+Obtain ˆw = PK
+k=1 ˆθk ˆwk.
+Result: ˆw
+estimators, where u1 is the first PC loadings of ¯
+W, under which the linear combination u⊤
+1 ¯
+W of
+ˆwk’s has the largest variance, or summarizes the most information in { ˆwk}k=1,...,K. In particular,
+under suitable conditions (see Theorem 2 below) on the overall quality of the source estimators, the
+first PC loadings are all nonnegative (in this case ˆs = u1), so that the first PC, ¯
+W⊤ˆs, is exactly the
+final aggregated source estimator ˆw. Moreover, whenever { ˆwk}k=1,...,K together contain sufficient
+amount of information about the direction of β, it can also be shown that the components of ˆs
+reflect the true discrepancy between each ˆwk and β, and that the final aggregated source estimator
+is asymptotically no worse than the best candidate source estimator (see Theorem 2 below). Similar
+spectral weighting idea has been considered for combining multiple classifiers without labeled data
+(Parisi et al., 2014). Such a strategy avoids splitting extra samples from already limited target data
+for aggregation so that it does not affect the prediction performance.
+Algorithm 2: Obtain ˆw without a validation dataset
+Data: Source estimates { ˆwk}k=1,...,K
+for k = 1, . . . , K do
+Normalize ˆwk and obtain ¯wk =
+ˆwk
+∥ˆwk∥2 .
+end
+Define ¯
+W = [ ¯w⊤
+1 , ¯w⊤
+2 , . . . , ¯w⊤
+K]⊤. Let ˆs = (ˆs1, ..., ˆsK) = |u1|, where u1 is the first
+eigenvector of ¯
+W ¯
+W⊤.
+Obtain the aggregated source estimates ˆw = PK
+k=1 ˆsk ¯wk.
+Result: ˆw
+The theoretical guarantee for Algorithm 1 has been carefully studied, e.g., in Tsybakov (2014).
+Here, we provide theoretical justification for Algorithm 2. We start with some definitions. Similarly
+as in Section 2, for each k ∈[K], we consider ˆwk = wk + δk, and assume wk and δk satisfy
+Assumptions 2 and 3. Moreover, we define Rw = (ρw
+ij) ∈RK×K, where
+ρw
+ij
+p is the largest eigenvalue
+of
+E
+
+wi
+∥wi∥2
+−
+β
+∥β∥2
+
+wj
+∥wj∥2
+−
+β
+∥β∥2
+⊤
+,
+1 ≤i, j ≤K,
+(8)
+which characterizes the pairwise covariance between the discrepancies in
+wi
+∥wi∥2 and
+wj
+∥wj∥2 with
+respect to
+β
+∥β∥2 , and define Rδ = (ρδ
+ij) ∈RK×K where
+ρδ
+ij
+p is the largest eigenvalue of
+E
+
+δiδ⊤
+j
+∥wi∥2∥wj∥2
+
+,
+1 ≤i, j ≤K
+(9)
+11
+which characterizes the pairwise covariance between the normalized source estimation errors
+δi
+∥wi∥2
+and
+δj
+∥wj∥2 . In a special case where the source datasets are mutually independent, we have ρδ
+ij = 0
+for i ̸= j, and Rδ is a diagonal matrix. Finally, we define the true similarity between ˆwi’s and
+β as s = (cos ∠( ˆw1, β), ..., cos ∠( ˆwK, β))⊤. With the above preparation, we state our main results
+concerning Algorithm 2.
+Theorem 2. Suppose for each k ∈{1, . . . , K}, wk and δk satisfy Assumptions 2 and 3 with positive
+ρ being bounded away from 0, and that ∥δk∥2
+2 = E∥δk∥2
+2 · (1 + o(1)) with high probability1. Then, for
+any small constant ϵ > 0, there exists some sufficiently small constant C1(ϵ) > 0 such that whenever
+max{∥Rδ∥, ∥Rw∥}/K ≤C1(ϵ), the following holds:
+1. For the spectral weights ˆs and the consensus source estimator ˆw defined in Algorithm 2, it
+holds that cos ∠(bs, s) =
+bs⊤s
+∥bs∥2∥s∥2 ≥1 −ϵ and cos ∠( ˆw, β) > ρ −ϵ in probability as n →∞.
+2. There exists some constant C2(ϵ) > 0 such that, whenever
+1
+ptr(Σδ) ≥C2(ϵ)α2
+s, we have
+cos ∠( ˆw, β) > max1≤k≤K cos ∠(bwk, β) + ϵ in probability as n →∞.
+Theorem 2 yields the effectiveness of the spectral weighting approach in three aspects. Firstly,
+it ensures that the estimated weight vector ˆs will converge to the true similarity measure s =
+(cos ∠( ˆw1, β), ..., cos ∠( ˆwK, β))⊤as n →∞. As a result, more weights will be given to the source
+estimators closer to β and less weights to those with smaller cos ∠( ˆwk, β). Secondly, it indicates
+the guaranteed performance of the final consensus source estimator ˆw, as long as the original
+correlation ρ between the source and target regression coefficients is sufficiently strong. Thirdly,
+and interestingly, part two of Theorem 2 shows that, whenever the source estimators have weak
+signal-to-noise ratio in the sense that E∥wk∥2
+2
+E∥δk∥2
+2 =
+pα2
+s
+tr(Σδ) is small, the consensus estimator has strictly
+better performance than all the source estimators in the large sample limit, demonstrating the
+consensus power of the spectral weighted estimator.
+The validity of the method relies on the additional condition that max{∥Rδ∥, ∥Rw∥} is small
+compared with K, which essentially requires the source estimators to be sufficiently diverse and less
+correlated in terms of both the respective true coefficients wk, and the estimation errors δk. Specif-
+ically, from our proof of Theorem 2 in Appendix 2 of the Supplementary Material, it can be seen
+as an “approximate rank-one” assumption for the matrix ¯
+W of normalized source estimators { ¯wk}.
+As such, the validity of Theorem 2 would effectively rely on the “spectral gap” between the singular
+values of the matrix ¯
+W, which can be accessed empirically. In other words, when the ratio between
+the first two singular values is significantly larger than those between any other consecutive singular
+values, the assumptions behind Algorithm 2 and Theorem 2 are likely satisfied. In this connection,
+several data-driven methods such as ScreeNot (Donoho et al., 2023) and BEMA (Ke et al., 2023)
+can be adopted to help assess the appropriateness of this “approximate rank-one” assumption. Sec-
+ond, due to the robustness of our transfer learning estimator against negative transfer, even when
+multiple sources are inappropriately aggregated for some reason, the final estimator would not be
+driven astray. Third, in addition to our spectral approach, one can alternatively use the supervised
+proposed in Algorithm 1, when the validity of Algorithm 2 is unclear. In Section 6, we show the
+effectiveness and superior performance of such spectral weighting approach in combining multiple
+source estimators learned from different genetic risk models.
+1An even An holds with high probability if there exists some N > 0 such that for all n ≥N we have P(An) ≥
+1 −n−D for some large constant D > 0.
+12
+5
+Simulation study
+5.1
+Comparing empirical and theoretical predictive risks
+We perform a simulation study to verify the theoretical predictive risks shown in Theorem 1. For
+j ∈{1, . . . , p}, we generate
+(wj, βj)⊤i.i.d
+∼N
+ 
+0, 1
+p
+ 
+α2
+s
+ραsαt
+ραsαt
+α2
+t
+!!
+.
+(10)
+We set n = 50 and p = γn, and generate X from independent standard normal distributions.
+We then generate Y ∼N(Xβ, 0.5In) given X. We vary the correlation between β and w, i.e.,
+ρ ∈{0.3, 0.6, 0.9}, and the signal strength ratio αt
+αs ∈{ 10
+9 , 2}, as well as the dimension-to-sample
+ratio γ = p
+n ∈{2, 1
+2}.
+We first consider the noiseless case where the source estimator ˆw = w. In the noiseless case, we
+have a precise prediction risk as shown in Equation (7). For a given λ chosen from a grid, we set
+η = ρ αt
+αs , which is the optimal choice of η, and calculate the theoretical risk. We also obtain the
+theoretical risk of distTL by setting η = λ in Equation (7). For the target-only approach, we obtain
+the theoretical risk by setting η = 0 in Equation (7). To obtain the empirical predictive risks, we
+apply each method on the training data for each λ in the grid, and then obtain the corresponding
+mean square errors evaluated on an independent testing dataset of size 100.
+Fig.2 compares the empirical risks and theoretical risks under the noiseless case. For all methods,
+the empirical risk aligns perfectly with the empirical risks, demonstrating the theoretical risk we
+obtained in Equation (7) is precise in the noiseless case. As expected, angleTL is no worse than the
+target-only estimator and distTL across all settings. Moreover, the optimal λ in theory (vertical
+line) precisely falls on the lowest point of the curve in all settings. Note that in the bottom right
+panel, we have ρ αt
+αs = 1 which represents the orthogonal case shown in panel C of Fig.1.
+We
+see that distTL reaches the same performance as angleTL. However, distTL can be worse than the
+target-only approach when ρ αt
+αs is far from 1, e.g., the first column, indicating that it cannot prevent
+negative transfer.
+Similarly, we perform a simulation study to verify the predictive risks when there are estimation
+errors δ. We generate δ ∼N(0, Σδ), where the covariance matrix Σδ is generated by setting an
+exchangeable correlation of 0.1 and the variances are uniformly generated between 0 to 0.05. We
+compute CL and CU using Σδ and obtain the theoretical upper and lower bounds for the predictive
+risk of angleTL. Fig.3 shows the empirical predictive risk of the target-only estimator, distTL, and
+angleTL. The shaded area represents the theoretical lower and upper bounds of the predictive risk
+of angleTL obtained in Theorem 1. We can see that the empirical risk of angleTL falls between the
+theoretical risk bounds. The width of the risk bounds increases with γ and ρ. Across all scenarios,
+the upper bounds are lower than the empirical risk of the target-only approach, which shows that
+angleTL can protect against negative transfer.
+13
+Figure 2: Empirical prediction error over 500 simulation replicates (solid curve) versus theoretical
+prediction error given in Equation (7) (dashed curve). The vertical line shows the optimal
+√
+λ in
+theory that leads to the minimum prediction error. We generate target and source estimates, β
+and w, through multivariate Gaussian distribution, by varying their correlation ρ ∈{0.3, 0.6, 0.9}
+(in columns), signal strength ratio αt
+αs ∈{ 10
+9 , 2} and dimension-to-sample ratio γ = p
+n ∈{2, 1
+2} (in
+rows). We sequentially select 100 λ values, and for each λ we train on 50 samples and test on 100
+samples. We report the average test error over 500 simulations. Black: target-only model; blue:
+distTL; red: angleTL.
+14
+Figure 3: Empirical prediction error over 500 simulation replicates (solid curve) and theoretical
+prediction error bound of proposed method following Theorem 1 (filled area). We generate target and
+source estimates, β and w, through multivariate normal distribution, by varying their correlation
+ρ ∈{0.3, 0.6, 0.9} (in columns), signal strength ratio αt
+αs ∈{ 10
+9 , 2}, and dimension-to-sample ratio
+γ =
+p
+n ∈{2, 1
+2} (in rows). We add randomly generated and uniformly distributed noise δ to w.
+We sequentially take 100 λ values, and for each λ we train on 50 samples and test on 100 samples.
+We report the average test error over 500 simulations. Black: target-only model; blue: distTL; red:
+angleTL.
+15
+5.2
+Evaluate the predictive performance across different settings
+5.2.1
+Single source study
+We first evaluate the empirical predictive performance of angleTL in the case with one source study.
+To mimic the practical situation, we generate data for both the source and target populations based
+on the corresponding model parameters w and β where the corresponding entries are generated from
+Equation (10). We set the sample sizes to be N = 5, 000 for the source population, and n = 50 for the
+target population. The dimension of the model is set to p ∈{25, 50, 100}. For the source population,
+we generate the predictors ˜X ∼N(0, ˜Σ), where the covariance matrix ˜Σ is set to have variances of 1
+and exchangeable correlation of 0.2, and we generate the outcome variable ˜Y ∼N( ˜Xw, 0.5IN). For
+the target population, we generate X ∼N(0, Σ), where Σ contains variances of 1 and exchangeable
+correlation of 0.1, and we generate the outcome variable Y ∼N(Xβ, 0.5In).
+We apply an ordinary least square approach on the generated source data to obtain ˆw, which
+is then used together with the target data. We compare the predictive performance of angleTL to
+three state-of-art methods: (i) target-only: target-only estimator through Equation (1); (ii) source-
+only: directly apply the source estimates on the testing data; (iii) distTL: distance-based transfer
+learning approach via Equation (2). The predictive performance is evaluated by the root mean
+squared error (RMSE) calculated from an independent testing data set of size 200, following the
+same data generating mechanism as the target data. The code for fitting target-only estimator,
+distTL, and angleTL is the same with different choices of η and λ selected by a three-fold cross-
+validation, which ensures comparability. Specifically, when running target-only ridge regression, we
+set η = 0 and only search λ from a grid containing 100 points randomly selected between 0.0001 and
+0.5. When running distTL, we set η = λ and search λ from a grid containing 100 points randomly
+selected between 0.0001 and 0.5. When running angleTL, η and λ are chosen from a two-dimensional
+grid, with λ ranges between 0.0001 and 0.5 while η ranges between 0.0001 and 0.2.
+In Fig.4, each panel of RMSE is summarized from 200 independent simulations, where lower
+value represents better prediction accuracy. The pattern aligns with what we see in Fig. 2, where
+the performance of angleTL improves over increasing correlation between the target and the source
+estimates increases. When αt
+αs = 2, we see that distTL overlaps with angleTL around ρ = 1
+2 where
+ρ αt
+αs is close to 1. When αt
+αs = 1
+2, for all ρ ∈(0, 1), since ρ αt
+αs < 1
+2, distTL shows consistently higher
+RMSE than angleTL; it also underperforms the target-only estimator, indicating that distTL fails
+to capture the similarity between the target and the source estimates and fails to prevent negative
+transfer. For a given γ = p
+n, the performance of angleTL is stable across different values of αt
+αs . For
+a given αt
+αs , the source model helpful when the dimension of the model is higher.
+5.2.2
+Multiple source studies
+We also consider the situation where we have multiple source studies as introduced in Section 4. The
+target sample size is set to n = 100 and each of the five source populations is of size N = 5, 000. We
+compare the results of the proposed multi-source estimators, angleTL-multi1 and angleTL-multi2,
+with the target-only estimator and the proposed single-source angleTL applying on the best single-
+source estimates. In angleTL1, we reserve 30% of the target data (30 samples) for aggregation.
+Fig.5 (A) shows the case where all source estimates have similar correlation as the target esti-
+mates between 0.4 to 0.6 and Fig.5 (B) shows the case where some of the sources are much more
+16
+Figure 4: Root mean squared error (RMSE) of predicted outcome over 200 simulations. In each
+panel, we vary the correlation ρ between the target and source estimates from 0.3 to 0.95. We
+vary γ = p
+n ∈{ 1
+2, 1, 2} (in rows) and the signal strength ratio αt
+αs ∈{ 1
+2, 1, 2} (in columns). Black:
+target-only model; grey: source-only model; blue: distTL; red: angleTL.
+17
+Figure 5: Root mean squared error (RMSE) of predicted outcome over 1,000 simulations comparing
+target only estimates (target-only), proposed angleTL when transferring from the best single model
+with the smallest ρ (angleTL), and proposed angleTL combined with Algorithm 1 (angleTL-multi1)
+and and proposed angleTL combined with Algorithm 2 (angleTL-multi2).
+Panels A, B, and C
+correspond to configurations with correlation ρ = (ρ1, ρ2, ρ3, ρ4, ρ5) being (0.4, 0.45, 0.5, 0.55, 0.6)
+(0.1, 0.3, 0.5, 0.7, 0.9),and (0.1, 0.1, 0.1, 0.1, 0.1), respectively.
+Panel D corresponds to the setting
+where K = 50 and correlations range from 0.1 to 0.9.
+helpful than others, with correlations ranging from 0.1 to 0.9. In the former case, the proposed
+angleTL-multi2 outperforms angleTL which only transfers from the best single source model ( ˆw5
+with ρ5 = 0.6) and angleTL-multi1 with supervised aggregation.
+The later case shows similar
+pattern, where angleTL with the best single source ( ˆw5 with ρ5 = 0.9) and angleTL-multi1 show
+improved performance than target-only and source-only models, slightly worse than angleTL-multi2.
+In Fig.5 (C), all five source vectors were very different from the target with ρ = 0.1. AngleTL shows
+similar performances as the target-only estimator, without borrowing much information from source
+models with low similarity to the target. However, this demonstrates the robust performance of
+angleTL in terms of preventing negative transfer from irrelevant source models.
+When dealing with
+a large number of source models, we conduct a simulation study with K = 50, with ρ ranging from
+0.1 to 0.9 (Fig. 5 (D)). Specifically, we randomly assign ρ from Uniform(0.1, 0.9) for 50 sources.
+We observe that angleTL-multi1 and angleTL-multi2 perform nearly the same and are better than
+target and single-source angleTL.
+18
+6
+Application to predict low-density lipoprotein
+We apply angleTL, angleTL-multi1, and angleTL-multi2 to predict low-density lipoprotein (LDL)
+cholesterol, a blood biomarker that plays a crucial role in determining cardiovascular disease (Kwiterovich Jr,
+2000), in self-reported White population using data from Mass General Brigham Biobank (MGBB)
+(Karlson et al., 2016). MGBB is a research database launched in 2021, containing around eighty
+thousands DNA samples before data quality control, yet still a relatively limited data size compared
+to other population-based biobanks such as the United Kingdom Biobank (UKB) (Sudlow et al.,
+2015). In this application, our goal is to build a prediction model for LDL using basic demographic
+and clinical risk factors, combined with top single nucleotide polymorphisms (SNPs), where our
+target population is the White population at MGBB. We consider a total of eight source models,
+including three models trained at UKB (LDL, Apolipoprotein B-100 [ApoB], and triglycerides [Tri])
+and five models for LDL trained at the five participating sites at the electronic MEdical Records
+and GEnomics (eMERGE) Network (Gottesman et al., 2013).
+In the MGBB database, we extracted data from 5,600 self-reported White participants. We
+extract up to the latest five LDL measures and use the average LDL as the outcome. The predictors
+include demographics such as age and gender, a binary indicator flagging the use of antihyperlipi-
+demic medications, as well as related genetic variants selected from a clumping and thresholding
+procedure with linkage disequilibrium and p-values of a genome-wide associate study (GWAS) using
+all the training samples from MGBB data (Choi et al., 2020). A total of 5,306 SNPs are selected
+with R2 threshold set to 0.6 and p-value threshold set to 0.0005 using PLINK 2.0 (Chang et al.,
+2015).
+We use UKB as one source dataset, from which we identify 409,031 samples with at least one
+measure of Tri, 408,602 samples with at least one measure of LDL, and 407,366 samples with at least
+one measure of Apo-B. To reduce the potentially inaccurate reporting ancestry, we selected those
+whose self-reported ancestry information agrees with the computed PC-based ancestry prediction
+(Zhang et al., 2020a).
+Among the five source datasets in eMERGE, we identified a total of 16,723 samples with at
+least one LDL measure. We extract the same set of genetic, medication, and demographic variables
+from UKB and eMERGE, and fit eight source models using linear regression. A summary of basic
+information of the target and eight source datasets can be found in Table
+1. Additional details
+regarding the data processing procedures can be found in Appendix 4.1 of the Supplementary
+Material.
+We compare the performance of the target-only estimator, the source-only estimator, distTL,
+and angleTL. We randomly split the target MGBB data into training and testing with a ratio of
+10:1. For angleTL-multi1, which needs validation data for aggregation, we further split 10% from
+the training data. All methods are trained on the training data, and the performance is measured by
+the R2 (variance explained by the model) evaluated on the testing data. This process is repeated 100
+times to account for the sampling variability. We employed ridge regression to calculate the target-
+only estimator and the majority of the source estimators, with the exception of those calculated
+from the UKB. Given that the total sample size in UKB exceeds 400,000, we opted for an ordinary
+least square linear regression due to computational efficiency.
+In Fig.6, we present the relative performance of each method compared to the benchmark target-
+19
+Table 1: Basic information of the target and eight source datasets.
+Biobank
+Outcome
+Sample size
+Mean age (SD)
+Male (%)
+Target
+MGBB
+LDL
+5,600
+64.7 (15.3)
+2,959 (52.8)
+Source
+UKB
+LDL
+408,602
+69.8 (8.0)
+187,607 (45.9)
+Tri
+409,031
+69.8 (8.0)
+187,821 (45.9)
+Apo-B
+407,366
+69.8 (8.0)
+186,763 (45.8)
+eMERGE
+Marshfield Clinic (Marsh)
+LDL
+4,551
+70.8 (9.7)
+1,496 (39.2)
+University of Washington (UW)
+LDL
+618
+80.9 (0.5)
+295 (54.0)
+Mayo Clinic (Mayo)
+LDL
+3,185
+71.3 (10.1)
+1,512 (56.7)
+Northwestern University (NWU)
+LDL
+3,037
+53.4 (15.2)
+287 (20.0)
+Mount Sinai Hospital (MtSinai)
+LDL
+5,332
+60.4 (13.1)
+363 (69.1)
+Figure 6: Mean (1st-3rd quantile) percentage change of R2 compared to the target-only model.
+The dark blue bars with grey background contains source-only estimates from UKB and eMERGE;
+the light blue bars with light blue background contains distTL; the red bars with red background
+includes the proposed single-source angleTL; and the last two yellow rows show angleTL-multi1
+and angleTL-multi2, respectively.
+Tri-UKB: triglycerides from UKB; ApoB: Apolipoprotein B-
+100; LDL: low-density lipoprotein; MtSinai=Mount Sinai Hospital, UW=University of Washington,
+NWU=Northwestern University, Mayo=Mayo Clinic, and Marsh=Marshfield Clinic.
+20
+only model. With 100 replications, we report the mean, the first and the third quantiles of the
+percentage improvement of R2. Among all the source-only models (dark blue bars with grey back-
+ground), the model trained at UKB using triglycerides as the outcome has the worse performance,
+and the model trained at Marshfield Clinic has the highest performance, where the average improve-
+ment is around 64%. When transferring each source model to train the target model using distTL
+(light blue bars with light blue background), all the single-source distTL have similar performance,
+around 6% improvement. When applying single-source angleTL (red bars with red background), we
+observe that the performance is uniformly better than the corresponding source-only models, and
+angleTL also outperforms distTL. In the last two rows, we see that angleTL-multi1 has comparable
+performance as the best single source, LDL-Marsh, while angleTL-multi2 has the largest average
+improvement of 109.3%. To assess the generalizability of the conclusion when the target population
+changes, we treat each of the sites in eMERGE as the target population, and obtain similar results
+where angleTL achieves the best performance in nearly all cases. More details can be found in
+Appendix 4.2 of the Supplementary Material.
+In this real application involving real data, the source models are derived using information from
+diverse study cohorts with varied outcomes. This results in heterogeneity on two levels: the cohort
+level and the outcome level, when comparing each source model to the target model. For instance,
+UKB is a population-based biobank, representing a comparatively healthier population than those
+from hospital-based cohorts collected at the eMERGE sites. Furthermore, the outcomes under con-
+sideration extend beyond LDL to include correlated traits such as triglycerides and Apolipoprotein
+B-100. These traits might possess overlapping genetic architectures with LDL. However, the influ-
+ence of each genetic variant on the traits may differ. Such heterogeneity requires more adaptive
+adjustment methods than the L2 constraint offered by distTL. This might explain why angleTL
+outperforms distTL in this particular application.
+7
+Discussion
+We propose angleTL, a flexible transfer learning framework that leverages the concordance of model
+parameters across populations. Compared to several benchmark methods, including the target-only
+model, the source-only models, and the distance-based transfer learning method, angleTL is shown
+to have improved performance both empirically and numerically. Under the setting with a single
+source model, we identify factors that influence the predictive performance of angleTL, including (1)
+the similarity between model parameters measured by the sin Θ distance, (2) the signal strengths of
+the source and the target model, (3) the ratio between model dimensionality and the target sample
+size, (4) the estimation error of the source estimator, and (5) the level of the residual noise, which
+provide useful practical guidance for understanding when a source population can be helpful. With
+multiple source models, we propose to aggregate the source models first before applying angleTL,
+which we also provide theoretical justifications of the aggregation algorithms. Like ridge regression,
+angleTL is easy-to-implement as it enjoys the advantage of having a closed-form solution. It does
+not require individual-level data from the source, and can prevent negative transfer. Our simulation
+and real data application demonstrate the validity and feasibility of angleTL across a wide range of
+settings.
+One limitation of angleTL is that it requires the source and the target models to include the
+21
+same covariates, whereas, in practice, source models might include covariates that are not measured
+at the target data or vice versa. There are existing methods focusing on incorporating source models
+that use a subset of covariates in the target model. For example, Chatterjee et al. (2016) proposed a
+constrained maximized likelihood approach where the external data follows the same distribution as
+the internal data. Accounting for heterogeneous data, methods such as Estes et al. (2018); Kundu
+et al. (2019); Zhang et al. (2020b); Gu et al. (2021); Taylor et al. (2022) are proposed, which all
+considered low-dimensional models and their ability to handle high-dimensional data requires further
+investigation. A more detailed discussion on related work, including different empirical approaches,
+can be found in Han (2022).
+It is an interesting future direction to extend angleTL to the setting where the source study uses
+a subset of the covariates in the target study. Methods proposed in related work such as Taylor et al.
+(2022) can be considered to address this, where we can first map the unique variables to a space
+orthogonal to the shared variables, and then include them in the model while using the angle-based
+regularization to borrow information.
+While we employ a linear model to illustrate the concept of angleTL, it is important to note
+that the penalty term λ∥β∥2
+2 −2η ˆw⊤β can be seamlessly integrated with the objective functions of
+various other problems. For instance, in addition to the regression problem discussed in our paper,
+we can apply this approach to a classification problem. In this scenario, our objective is to classify
+an outcome variable y based on a covariate vector x, using a classification rule denoted as f(x⊤β).
+When we aim to learn this classification rule for the target population, we have the flexibility to select
+an appropriate objective function. Furthermore, we can incorporate source estimators ˆwk derived
+from different populations using various models, such as logistic regression, support vector machines
+(Cortes and Vapnik, 1995), and linear or quadratic discrimination analysis (Hastie et al., 2009), into
+the target model through the angleTL penalty (an additional simulation study to demonstrate the
+performance of angleTL in a classification problem can be found in Appendix 3 of Supplementary
+Material).
+While the proposed penalization is motivated by an angle-based similarity measure between the
+source and target model parameters, in a classification problem, it might be useful to consider an
+alternative similarity defined by the fitted outcomes. More specifically, we can consider the similarity
+measure defined as sin Θ(Xβ, Xw) or a rank-based measure P
+i̸=j I(X⊤
+i β > X⊤
+j w, X⊤
+i β > X⊤
+j w),
+which is closely related to the maximum rank correlation problem discussed in Han (1987); Wang
+(2007); Stephanou and Varughese (2021); Shin and Todorov (2021).
+Acknowledgement
+This work is supported by the National Institute of General Medical Sciences (NIGM) R01GM148494.
+References
+Bai, Z. and Silverstein, J. W. (2010) Spectral analysis of large dimensional random matrices, vol. 20.
+Springer.
+22
+Belbasis, L. and Panagiotou, O. A. (2022) Reproducibility of prediction models in health services
+research. BMC Research Notes, 15, 1–5.
+Cai, T., Liu, M. and Xia, Y. (2021) Individual data protected integrative regression analysis of
+high-dimensional heterogeneous data. Journal of the American Statistical Association, 1–15.
+Cai, T. T., Han, X. and Pan, G. (2020) Limiting laws for divergent spiked eigenvalues and largest
+nonspiked eigenvalue of sample covariance matrices. The Annals of Statistics, 48, 1255–1280.
+Chang, C. C., Chow, C. C., Tellier, L. C., Vattikuti, S., Purcell, S. M. and Lee, J. J. (2015)
+Second-generation plink: rising to the challenge of larger and richer datasets. Gigascience, 4,
+s13742–015.
+Chatterjee, N., Chen, Y.-H., P.Maas and Carroll, R. J. (2016) Constrained maximum likelihood
+estimation for model calibration using summary-level information from external big data sources.
+Journal of the American Statistical Association, 111, 107–117.
+Chen, E. Y., Jordan, M. I. and Li, S. (2022) Transferred q-learning. arXiv preprint arXiv:2202.04709.
+Chen, W.-C., Wang, C., Li, H., Lu, N., Tiwari, R., Xu, Y. and Yue, L. Q. (2020) Propensity
+score-integrated composite likelihood approach for augmenting the control arm of a randomized
+controlled trial by incorporating real-world data. Journal of Biopharmaceutical Statistics, 30,
+508–520.
+Choi, S. W., Mak, T. S.-H. and O’Reilly, P. F. (2020) Tutorial: a guide to performing polygenic
+risk score analyses. Nature protocols, 15, 2759–2772.
+Cortes, C. and Vapnik, V. (1995) Support-vector networks. Machine learning, 20, 273–297.
+Dobriban, E. and Wager, S. (2018) High-dimensional asymptotics of prediction: Ridge regression
+and classification. The Annals of Statistics, 46, 247–279.
+Donoho, D. and Gavish, M. (2014) Minimax risk of matrix denoising by singular value thresholding.
+The Annals of Statistics, 42, 2413–2440.
+Donoho, D., Gavish, M. and Romanov, E. (2023) Screenot: Exact mse-optimal singular value
+thresholding in correlated noise. The Annals of Statistics, 51, 122–148.
+Duan, R., Boland, M. R., Moore, J. H. and Chen, Y. (2018) Odal: A one-shot distributed algorithm
+to perform logistic regressions on electronic health records data from multiple clinical sites. In
+BIOCOMPUTING 2019: Proceedings of the Pacific Symposium, 30–41. World Scientific. PMCID:
+PMC6417819.
+Duan, R., Luo, C., Schuemie, M. J., Tong, J., Liang, C. J., Chang, H. H., Regina Boland, M., Bian,
+J., Xu, H., Holmes, J. H., Forrest, C. B., Morton, S. C., Berlin, J. A., Moore, J. H., Mahoney,
+K. B. and Chen, Y. (2020) Learning from local to global: An efficient distributed algorithm
+for modeling time-to-event data. Journal of the American Medical Informatics Association, 27,
+1028–1036.
+23
+Duan, R., Ning, Y. and Chen, Y. (2022) Heterogeneity-aware and communication-efficient dis-
+tributed statistical inference. Biometrika, 109, 67–83.
+Duan, Y. and Wang, K. (2022) Adaptive and robust multi-task learning.
+arXiv preprint
+arXiv:2202.05250.
+Estes, J. P., Mukherjee, B. and Taylor, J. M. (2018) Empirical bayes estimation and prediction
+using summary-level information from external big data sources adjusting for violations of trans-
+portability. Statistics in biosciences, 10, 568–586.
+Ganin, Y. and Lempitsky, V. (2015) Unsupervised domain adaptation by backpropagation.
+In
+International conference on machine learning, 1180–1189. PMLR.
+Girshick, R., Donahue, J., Darrell, T. and Malik, J. (2014) Rich feature hierarchies for accurate
+object detection and semantic segmentation. In Proceedings of the IEEE conference on computer
+vision and pattern recognition, 580–587.
+Gottesman, O., Kuivaniemi, H., Tromp, G., Faucett, W. A., Li, R., Manolio, T. A., Sanderson,
+S. C., Kannry, J., Zinberg, R., Basford, M. A. et al. (2013) The electronic medical records and
+genomics (eMERGE) network: past, present, and future. Genetics in Medicine, 15, 761–771.
+PMCID: PMC3795928.
+Gu, T., Han, Y. and Duan, R. (2023a) A transfer learning approach based on random forest with
+application to breast cancer prediction in underrepresented populations. In proceedings in Pacific
+Symposium on Biocomputing (PSB).
+Gu, T., Lee, P. H. and Duan, R. (2023b) Commute: Communication-efficient transfer learning for
+multi-site risk prediction. Journal of Biomedical Informatics, 137, 104243.
+Gu, T., Taylor, J. M. and Mukherjee, B. (2021) A meta-inference framework to integrate multiple
+external models into a current study. Biostatistics. Kxab017.
+Hafemeister, C. and Satija, R. (2019) Normalization and variance stabilization of single-cell rna-seq
+data using regularized negative binomial regression. Genome biology, 20, 1–15.
+Han, A. K. (1987) Non-parametric analysis of a generalized regression model: the maximum rank
+correlation estimator. Journal of Econometrics, 35, 303–316.
+Han, P. (2022) A discussion on “a selective review of statistical methods using calibration informa-
+tion from similar studies” by qin, liu and li. Stat. Theory Relat. Fields, 1–3.
+Hastie, T., Tibshirani, R., Friedman, J. H. and Friedman, J. H. (2009) The elements of statistical
+learning: data mining, inference, and prediction, vol. 2. Springer.
+Huang, J., Gretton, A., Borgwardt, K., Sch¨olkopf, B. and Smola, A. (2006) Correcting sample
+selection bias by unlabeled data. Advances in neural information processing systems, 19.
+Jia, J. and Shi, T. (2017) Towards efficiency in rare disease research: what is distinctive and
+important? Science China Life Sciences, 60, 686–691.
+24
+Karlson, E. W., Boutin, N. T., Hoffnagle, A. G. and Allen, N. L. (2016) Building the partners
+healthcare biobank at partners personalized medicine: Informed consent, return of research re-
+sults, recruitment lessons and operational considerations. Journal of Personalized Medicine, 6.
+PMCID: PMC4810381.
+Ke, Z. T., Ma, Y. and Lin, X. (2023) Estimation of the number of spiked eigenvalues in a covariance
+matrix by bulk eigenvalue matching analysis. Journal of the American Statistical Association,
+118, 374–392.
+Kim, P. and Milliken, E. L. (2019) Minority participation in biobanks: An essential key to progress.
+Biobanking, 43–50.
+Kirby, J. C., Speltz, P. et al. (2016) Phekb: a catalog and workflow for creating electronic phenotype
+algorithms for transportability. JAMIA, 23, 1046–1052.
+Kundu, P., Tang, R. and Chatterjee, N. (2019) Generalized meta-analysis for multiple regression
+models across studies with disparate covariate information. Biometrika, 106, 567–585.
+Kwiterovich Jr, P. O. (2000) The metabolic pathways of high-density lipoprotein, low-density
+lipoprotein, and triglycerides: a current review. The American journal of cardiology, 86, 5–10.
+Lecu´e, G. and Rigollet, P. (2014) Optimal learning with q-aggregation. The Annals of Statistics,
+42, 211–224.
+Ledoit, O. and Wolf, M. (2015) Spectrum estimation: A unified framework for covariance matrix
+estimation and pca in large dimensions. Journal of Multivariate Analysis, 139, 360–384.
+Li, C., Yang, C., Gelernter, J. and Zhao, H. (2014) Improving genetic risk prediction by leveraging
+pleiotropy. Human Genetics, 133, 639–650.
+Li, S., Cai, T. and Duan, R. (2021) Targeting underrepresented populations in precision medicine:
+A federated transfer learning approach. arXiv preprint arXiv:2108.12112.
+Li, S., Cai, T. T. and Li, H. (2020) Transfer learning for high-dimensional linear regression: Pre-
+diction, estimation, and minimax optimality. Journal of the Royal Statistical Society Series B,
+84.
+— (2022) Transfer learning in large-scale gaussian graphical models with false discovery rate control.
+Journal of the American Statistical Association, 1–13.
+Li, X. and Song, Y. (2020) Target population statistical inference with data integration across
+multiple sources—an approach to mitigate information shortage in rare disease clinical trials.
+Statistics in Biopharmaceutical Research, 12, 322–333.
+Liang, M., Zhong, X. and Park, J. (2020) Learning a high-dimensional classification rule using
+auxiliary outcomes. arXiv preprint arXiv:2011.05493.
+Lin, H. and Reimherr, M. (2022) On transfer learning in functional linear regression. arXiv preprint
+arXiv:2206.04277.
+25
+Liu, Y., Fan, T., Chen, T., Xu, Q. and Yang, Q. (2021) Fate: An industrial grade platform for
+collaborative learning with data protection. J. Mach. Learn. Res., 22, 1–6.
+Long, M., Wang, J., Ding, G., Sun, J. and Yu, P. S. (2013) Transfer feature learning with joint
+distribution adaptation. In Proceedings of the IEEE international conference on computer vision,
+2200–2207.
+Maier, R., Moser, G., Chen, G.-B., Ripke, S. and Cross-Disorder Working Group of the Psychiatric
+Genomics Consortium (2014) Joint analysis of psychiatric disorders increases accuracy of risk
+prediction for schizophrenia, bipolar disorder, and major depressive disorder.
+The American
+Journal of Human Genetics, 96, 283–294.
+Mansukhani, M. P., Kolla, B. P., Wang, Z. and Morgenthaler, T. I. (2019) Effect of varying def-
+initions of hypopnea on the diagnosis and clinical outcomes of sleep-disordered breathing: a
+systematic review and meta-analysis. Journal of Clinical Sleep Medicine, 15, 687–696.
+Meinshausen, N. and B¨uhlmann, P. (2015) Maximin effects in inhomogeneous large-scale data. The
+Annals of Statistics, 43, 1801–1830. URL: http://www.jstor.org/stable/43556661.
+Miglioretti, D. L. (2003) Latent transition regression for mixed outcomes. Biometrics, 59, 710–720.
+Mitchell, B. L., Thorp, J. G., Wu, Y., Campos, A. I., Nyholt, D. R., Gordon, S. D., Whiteman,
+D. C., Olsen, C. M., Hickie, I. B., Martin, N. G. et al. (2021) Polygenic risk scores derived from
+varying definitions of depression and risk of depression. JAMA psychiatry, 78, 1152–1160.
+Pan, S. J., Tsang, I. W., Kwok, J. T. and Yang, Q. (2010) Domain adaptation via transfer component
+analysis. IEEE transactions on neural networks, 22, 199–210.
+Parisi, F., Strino, F., Nadler, B. and Kluger, Y. (2014) Ranking and combining multiple predictors
+without labeled data. Proceedings of the National Academy of Sciences, 111, 1253–1258.
+Qiao, J., Zhou, H., Yang, C. and Yang, S. (2019) A decomposition-based multiobjective evolutionary
+algorithm with angle-based adaptive penalty. Applied Soft Computing, 74, 190–205.
+Rigollet, P. and Tsybakov, A. (2011) Exponential screening and optimal rates of sparse estimation.
+The Annals of Statistics, 39, 731–771.
+Roobol, M. J., van Vugt, H. A., Loeb, S., Zhu, X., Bul, M., Bangma, C. H., van Leenders, A. G.,
+Steyerberg, E. W. and Schr¨oder, F. H. (2012) Prediction of prostate cancer risk: the role of
+prostate volume and digital rectal examination in the erspc risk calculators. European urology,
+61, 577–583.
+Shin, Y. and Todorov, Z. (2021) Exact computation of maximum rank correlation estimator. The
+Econometrics Journal, 24, 589–607.
+Stearns, F. W. (2010) One hundred years of pleiotropy: a retrospective. Genetics, 186, 767–773.
+Stephanou, M. and Varughese, M. (2021) Sequential estimation of spearman rank correlation using
+hermite series estimators. Journal of Multivariate Analysis, 186, 104783.
+26
+Sudlow, C., Gallacher, J., Allen, N., Beral, V., Burton, P., Danesh, J., Downey, P., Elliott, P.,
+Green, J., Landray, M., Liu, B., Matthews, P., Ong, G., Pell, J., Silman, A., Young, A., Sprosen,
+T., Peakman, T. and Collins, R. (2015) Uk biobank: an open access resource for identifying the
+causes of a wide range of complex diseases of middle and old age. PLoS medicine, 12, e1001779–
+e1001779. URL: https://pubmed.ncbi.nlm.nih.gov/25826379.
+Sun, B. and Saenko, K. (2016) Deep coral: Correlation alignment for deep domain adaptation. In
+European conference on computer vision, 443–450. Springer.
+Tan, Z. (2006) Regression and weighting methods for causal inference using instrumental variables.
+Journal of the American Statistical Association, 101, 1607–1618.
+Taylor, J. M., Choi, K. and Han, P. (2022) Data integration: Exploiting ratios of parameter esti-
+mates from a reduced external model. Biometrika.
+Teja, A. (2017) Indonesian fintech business: New innovations or foster and collaborate in business
+ecosystems? The Asian Journal of Technology Management, 10, 10.
+Thompson, I. M., Ankerst, D. P., Chi, C., Goodman, P. J., Tangen, C. M., Lucia, M. S., Feng,
+Z., Parnes, H. L. and Coltman Jr, C. A. (2006) Assessing prostate cancer risk: results from the
+prostate cancer prevention trial. Journal of the National Cancer Institute, 98, 529–534.
+Tian, Y., Weng, H. and Feng, Y. (2022) Unsupervised multi-task and transfer learning on gaussian
+mixture models. arXiv preprint arXiv:2209.15224.
+Tian, Y. and Yang, F. (2022) Transfer learning under high-dimensional generalized linear models.
+Journal of the American Statistical Association.
+Tsybakov, A. B. (2014) Aggregation and minimax optimality in high-dimensional estimation. In
+Proceedings of the International Congress of Mathematicians, vol. 3, 225–246.
+Tzeng, E., Hoffman, J., Zhang, N., Saenko, K. and Darrell, T. (2014) Deep domain confusion:
+Maximizing for domain invariance. arXiv preprint arXiv:1412.3474.
+Van Buuren, S., Brand, J. P. L., Groothuis-Oudshoorn, C. G. M. and Rubin, D. B. (2006) Fully
+conditional specification in multivariate imputation. Journal of Statistical Computation and Sim-
+ulation, 76, 1049–1064.
+Viele, K., Berry, S., Neuenschwander, B., Amzal, B., Chen, F., Enas, N., Hobbs, B., Ibrahim, J. G.,
+Kinnersley, N., Lindborg, S., Micallef, S., Roychoudhury, S. and Thompsonl, L. (2014) Use of
+historical control data for assessing treatment effects in clinical trials. Pharmaceutical Statistics,
+13, 41–54.
+Vilhj´almsson, B. J., Yang, J., Finucane, H. K., Gusev, A., Lindstr¨om, S., Ripke, S., Genovese, G.,
+Loh, P.-R., Bhatia, G., Do, R. et al. (2015) Modeling linkage disequilibrium increases accuracy
+of polygenic risk scores. The american journal of human genetics, 97, 576–592.
+Wang, H. (2007) A note on iterative marginal optimization: a simple algorithm for maximum rank
+correlation estimation. Computational statistics & data analysis, 51, 2803–2812.
+27
+Wang, Z., B¨uhlmann, P. and Guo, Z. (2023) Distributionally robust machine learning with multi-
+source data. arXiv preprint arXiv:2309.02211.
+Weiss, K., Khoshgoftaar, T. M. and Wang, D. (2016) A survey of transfer learning. Journal of Big
+data, 3, 1–40.
+Wu, X., Nethery, R. C., Sabath, M. B., Braun, D. and Dominici, F. (2020) Exposure to air pollution
+and covid-19 mortality in the united states: A nationwide cross-sectional study. MedRxiv.
+Wynants, L., Van Calster, B., Collins, G. S., Riley, R. D., Heinze, G., Schuit, E., Bonten, M. M.,
+Dahly, D. L., Damen, J. A., Debray, T. P. et al. (2020) Prediction models for diagnosis and
+prognosis of covid-19: systematic review and critical appraisal. bmj, 369.
+Yang, F., Liu, S., Dobriban, E. and Woodruff, D. P. (2021) How to reduce dimension with pca and
+random projections? IEEE Transactions on Information Theory, 67, 8154–8189.
+Yang, S. and Kim, J. K. (2020) Statistical data integration in survey sampling: a review. Japanese
+Journal of Statistics and Data Science, 3, 625–650.
+Zhang, D., Dey, R. and Lee, S. (2020a) Fast and robust ancestry prediction using principal compo-
+nent analysis. Bioinformatics, 36.
+Zhang, H., Deng, L., Schiffman, M., Qin, J. and Yu, K. (2020b) Generalized integration model for
+improved statistical inference by leveraging external summary data. Biometrika, 107, 689–703.
+28
