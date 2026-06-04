@@ -6,7 +6,7 @@
 
 ## Fig 1. violin_rmse.png — S1-1: RMSE 분포 (10 시드)
 
-![S1-1 RMSE Violin](violin_rmse.png)
+![S1-1 RMSE Violin](figures/violin_rmse.png)
 
 **출처**: S1-1 Within Variation 실험  
 **데이터**: 고정 데이터(소스 = T1D 15분 그룹, 타겟 = ShanghaiT2DM), 10개 난수 시드
@@ -29,7 +29,7 @@
 
 ## Fig 2. violin_kappa.png — S1-5: Cohen's Kappa 분포 (10 시드)
 
-![S1-5 Kappa Violin](violin_kappa.png)
+![S1-5 Kappa Violin](figures/violin_kappa.png)
 
 **출처**: S1-5 3분류 전환 분석  
 **데이터**: S1-1과 동일한 예측값을 저혈당(< 70 mg/dL) / 정상(70~180) / 고혈당(> 180) 3분류로 이산화
@@ -51,7 +51,7 @@ tradaboost(0.756)와 coral(0.755)이 가장 높고, target_only(0.749), mixed(0.
 
 ## Fig 3. heatmap_5min.png — S1-2 LODO: 5분 그룹 RMSE 히트맵
 
-![S1-2 LODO Heatmap 5min](heatmap_5min.png)
+![S1-2 LODO Heatmap 5min](figures/heatmap_5min.png)
 
 **출처**: S1-2 LODO 실험  
 **데이터**: 5분 그룹 21개 데이터셋, 4개 모델(coral, mixed, source_only, target_only, tradaboost)
@@ -74,7 +74,7 @@ tradaboost(0.756)와 coral(0.755)이 가장 높고, target_only(0.749), mixed(0.
 
 ## Fig 4. heatmap_15min.png — S1-2 LODO: 15분 그룹 RMSE 히트맵
 
-![S1-2 LODO Heatmap 15min](heatmap_15min.png)
+![S1-2 LODO Heatmap 15min](figures/heatmap_15min.png)
 
 **출처**: S1-2 LODO 실험  
 **데이터**: 15분 그룹 3개 데이터셋(Bris-T1D_Open, ShanghaiT1DM, ShanghaiT2DM)
@@ -91,7 +91,7 @@ tradaboost(0.756)와 coral(0.755)이 가장 높고, target_only(0.749), mixed(0.
 
 ## Fig 5. heatmap_1min.png — S1-2 LODO: 1분 그룹 RMSE 히트맵
 
-![S1-2 LODO Heatmap 1min](heatmap_1min.png)
+![S1-2 LODO Heatmap 1min](figures/heatmap_1min.png)
 
 **출처**: S1-2 LODO 실험  
 **데이터**: 1분 그룹 2개 데이터셋(CGMacros_Dexcom, CGMacros_Libre)
@@ -108,7 +108,7 @@ CGMacros_Dexcom 행의 coral 셀(4.4, 진적색)이 다른 모델(2.7~3.3)보다
 
 ## Fig 6. scatter_distance_vs_delta.png — S1-3: 도메인 거리 vs. 전이학습 이득
 
-![S1-3 Domain Distance vs Delta RMSE](scatter_distance_vs_delta.png)
+![S1-3 Domain Distance vs Delta RMSE](figures/scatter_distance_vs_delta.png)
 
 **출처**: S1-3 도메인 거리 분석  
 **데이터**: 26개 타겟 데이터셋 각각의 도메인 거리 지표(MMD, PAD, Cov Frobenius, SWD)와 Delta RMSE(전이학습 RMSE - Target-Only RMSE)
@@ -130,7 +130,7 @@ CGMacros_Dexcom 행의 coral 셀(4.4, 진적색)이 다른 모델(2.7~3.3)보다
 
 ## Fig 7. acf_mean_all_models.png — S1-4: 잔차 자기상관함수 (26개 타겟 평균)
 
-![S1-4 Mean ACF](acf_mean_all_models.png)
+![S1-4 Mean ACF](figures/acf_mean_all_models.png)
 
 **출처**: S1-4 시계열 한계 분석  
 **데이터**: 26개 타겟 데이터셋의 잔차(y_true - y_pred) ACF를 4개 모델에 대해 lag 1~20 계산 후 평균
@@ -152,7 +152,7 @@ lag=1에서 4개 모델 모두 ACF 0.60~0.62로 신뢰구간을 크게 초과한
 
 ## Fig 8. velocity_rmse_bars.png — S1-4: 혈당 변화 속도별 RMSE
 
-![S1-4 Velocity RMSE](velocity_rmse_bars.png)
+![S1-4 Velocity RMSE](figures/velocity_rmse_bars.png)
 
 **출처**: S1-4 시계열 한계 분석  
 **데이터**: 잔차에서 직전 혈당 변화 속도(velocity = y[t] - y[t-1])를 5구간으로 분류하고, 각 구간별 RMSE를 26개 타겟 평균으로 계산
