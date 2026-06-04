@@ -65,6 +65,11 @@
 !011_Intermediate_Results/*.csv
 !011_Intermediate_Results/*.json
 
+# 019_Stage_1_Results/figures — 실험 시각화 결과 추적
+!019_Stage_1_Results/
+!019_Stage_1_Results/figures/
+!019_Stage_1_Results/figures/*.png
+
 
 # ==========================================
 # 4. 개발 환경 및 캐시
