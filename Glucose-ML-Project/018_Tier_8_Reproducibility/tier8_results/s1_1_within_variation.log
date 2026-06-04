@@ -1,0 +1,128 @@
+12:46:29  ============================================================
+12:46:29    S1-1: Within Variation + S1-5: Classification
+12:46:29  ============================================================
+12:46:29  
+Loading source pool (15min group, excluding ShanghaiT2DM)...
+12:46:30    Source: 862,905 windows
+12:46:30  Loading target split (ShanghaiT2DM)...
+12:46:30    Train: 72,058 | Val: 19,613 | Test: 19,932
+12:46:30  
+  === Seed 42 ===
+12:46:38      [source_only    ]  RMSE=20.95  MAE=14.49  MARD=10.6%
+12:46:38      [target_only    ]  RMSE=19.75  MAE=13.77  MARD=10.2%
+12:46:38      [mixed          ]  RMSE=20.61  MAE=14.25  MARD=10.5%
+12:46:47      [coral          ]  RMSE=19.77  MAE=13.79  MARD=10.2%
+12:55:49  ============================================================
+12:55:49    S1-1: Within Variation + S1-5: Classification
+12:55:49  ============================================================
+12:55:49  
+Loading source pool (15min group, excluding ShanghaiT2DM)...
+12:55:49    Source: 862,905 windows
+12:55:49  Loading target split (ShanghaiT2DM)...
+12:55:49    Train: 72,058 | Val: 19,613 | Test: 19,932
+12:55:49  
+  === Seed 42 ===
+12:55:57      [source_only    ]  RMSE=20.95  MAE=14.49  MARD=10.6%
+12:55:57      [target_only    ]  RMSE=19.75  MAE=13.77  MARD=10.2%
+12:55:57      [mixed          ]  RMSE=20.61  MAE=14.25  MARD=10.5%
+12:56:06      [coral          ]  RMSE=19.77  MAE=13.79  MARD=10.2%
+12:57:37      [tradaboost     ]  RMSE=19.78  MAE=13.67  MARD=10.0%
+12:57:37  
+  === Seed 123 ===
+12:57:45      [source_only    ]  RMSE=20.93  MAE=14.48  MARD=10.6%
+12:57:45      [target_only    ]  RMSE=19.74  MAE=13.75  MARD=10.2%
+12:57:45      [mixed          ]  RMSE=20.65  MAE=14.28  MARD=10.5%
+12:57:53      [coral          ]  RMSE=19.76  MAE=13.78  MARD=10.2%
+12:59:26      [tradaboost     ]  RMSE=19.78  MAE=13.67  MARD=10.0%
+12:59:26  
+  === Seed 456 ===
+12:59:36      [source_only    ]  RMSE=20.95  MAE=14.49  MARD=10.6%
+12:59:36      [target_only    ]  RMSE=19.76  MAE=13.77  MARD=10.2%
+12:59:36      [mixed          ]  RMSE=20.60  MAE=14.25  MARD=10.5%
+12:59:43      [coral          ]  RMSE=19.73  MAE=13.77  MARD=10.2%
+13:01:17      [tradaboost     ]  RMSE=19.78  MAE=13.67  MARD=10.0%
+13:01:17  
+  === Seed 789 ===
+13:01:26      [source_only    ]  RMSE=20.96  MAE=14.50  MARD=10.7%
+13:01:26      [target_only    ]  RMSE=19.72  MAE=13.75  MARD=10.2%
+13:01:26      [mixed          ]  RMSE=20.60  MAE=14.26  MARD=10.5%
+13:01:32      [coral          ]  RMSE=19.74  MAE=13.80  MARD=10.2%
+13:03:05      [tradaboost     ]  RMSE=19.78  MAE=13.67  MARD=10.0%
+13:03:05  
+  === Seed 1024 ===
+13:03:14      [source_only    ]  RMSE=20.98  MAE=14.52  MARD=10.7%
+13:03:14      [target_only    ]  RMSE=19.75  MAE=13.76  MARD=10.2%
+13:03:14      [mixed          ]  RMSE=20.62  MAE=14.26  MARD=10.5%
+13:03:24      [coral          ]  RMSE=19.72  MAE=13.76  MARD=10.2%
+13:04:59      [tradaboost     ]  RMSE=19.78  MAE=13.67  MARD=10.0%
+13:04:59  
+  === Seed 2048 ===
+13:05:08      [source_only    ]  RMSE=20.94  MAE=14.49  MARD=10.6%
+13:05:08      [target_only    ]  RMSE=19.73  MAE=13.77  MARD=10.2%
+13:05:08      [mixed          ]  RMSE=20.63  MAE=14.27  MARD=10.5%
+13:05:15      [coral          ]  RMSE=19.80  MAE=13.83  MARD=10.2%
+13:06:48      [tradaboost     ]  RMSE=19.78  MAE=13.67  MARD=10.0%
+13:06:49  
+  === Seed 3333 ===
+13:06:58      [source_only    ]  RMSE=20.94  MAE=14.48  MARD=10.6%
+13:06:58      [target_only    ]  RMSE=19.75  MAE=13.78  MARD=10.2%
+13:06:58      [mixed          ]  RMSE=20.60  MAE=14.25  MARD=10.5%
+13:07:06      [coral          ]  RMSE=19.75  MAE=13.80  MARD=10.2%
+13:08:42      [tradaboost     ]  RMSE=19.78  MAE=13.67  MARD=10.0%
+13:08:42  
+  === Seed 5555 ===
+13:08:51      [source_only    ]  RMSE=20.93  MAE=14.48  MARD=10.6%
+13:08:51      [target_only    ]  RMSE=19.73  MAE=13.76  MARD=10.2%
+13:08:51      [mixed          ]  RMSE=20.62  MAE=14.26  MARD=10.5%
+13:08:59      [coral          ]  RMSE=19.74  MAE=13.78  MARD=10.2%
+13:10:34      [tradaboost     ]  RMSE=19.78  MAE=13.67  MARD=10.0%
+13:10:34  
+  === Seed 7777 ===
+13:10:43      [source_only    ]  RMSE=20.94  MAE=14.48  MARD=10.6%
+13:10:43      [target_only    ]  RMSE=19.76  MAE=13.77  MARD=10.2%
+13:10:43      [mixed          ]  RMSE=20.63  MAE=14.27  MARD=10.5%
+13:10:50      [coral          ]  RMSE=19.74  MAE=13.78  MARD=10.2%
+13:12:25      [tradaboost     ]  RMSE=19.78  MAE=13.67  MARD=10.0%
+13:12:25  
+  === Seed 9999 ===
+13:12:33      [source_only    ]  RMSE=20.94  MAE=14.49  MARD=10.6%
+13:12:33      [target_only    ]  RMSE=19.77  MAE=13.79  MARD=10.2%
+13:12:33      [mixed          ]  RMSE=20.62  MAE=14.26  MARD=10.5%
+13:12:39      [coral          ]  RMSE=19.78  MAE=13.82  MARD=10.2%
+13:14:15      [tradaboost     ]  RMSE=19.78  MAE=13.67  MARD=10.0%
+13:14:15  
+Saved regression results: 50 rows
+13:14:15  Saved classification results: 50 rows
+13:14:15  
+============================================================
+13:14:15    S1-1 Summary: RMSE by Model
+13:14:15  ============================================================
+13:14:15  
+                  mean       std        min        max        cv
+model                                                           
+coral        19.753687  0.026000  19.716806  19.804988  0.001316
+mixed        20.618437  0.017356  20.597459  20.652774  0.000842
+source_only  20.945922  0.015081  20.930563  20.980112  0.000720
+target_only  19.746123  0.014982  19.720082  19.770971  0.000759
+tradaboost   19.782493  0.000000  19.782493  19.782493  0.000000
+13:14:15  
+  Flip Rate (TL RMSE > Target-Only RMSE):
+13:14:15      coral: 6/10 = 60.0%
+13:14:15      tradaboost: 10/10 = 100.0%
+13:14:15      mixed: 10/10 = 100.0%
+13:14:15  
+============================================================
+13:14:15    S1-5 Summary: Kappa by Model
+13:14:15  ============================================================
+13:14:15  
+                 mean       std       min       max        cv
+model                                                        
+coral        0.755001  0.001864  0.752944  0.758798  0.002470
+mixed        0.749808  0.000903  0.748445  0.751897  0.001204
+source_only  0.745622  0.001803  0.743044  0.748032  0.002419
+target_only  0.749455  0.001989  0.745358  0.751537  0.002655
+tradaboost   0.756398  0.000000  0.756398  0.756398  0.000000
+13:14:15  
+Generating violin plot...
+13:14:15  
+Done. All results saved to: C:\Users\user\Documents\NPJ2\Glucose-ML-Project\018_Tier_8_Reproducibility\tier8_results\s1_1_within_variation
