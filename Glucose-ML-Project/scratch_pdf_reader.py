@@ -1,26 +1,21 @@
 import sys
 import io
 
-# Force utf-8 encoding for standard output
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+# sys.stdout.reconfigure는 python 3.7+ 에서 가장 안정적인 인코딩 재설정 방식입니다.
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
+else:
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
-pdf_path = "C:/Users/user/Documents/NPJ2/2507.14077v1.pdf"
+pdf_path = "c:/Users/user/Documents/NPJ2/Glucose-ML-Project/020_Tier_9_Temporal_Models/paper_raw/2605.21088.pdf"
 
 try:
-    import PyPDF2
-    with open(pdf_path, 'rb') as f:
-        reader = PyPDF2.PdfReader(f)
-        for page_num in range(len(reader.pages)):
-            text = reader.pages[page_num].extract_text()
-            if not text: continue
-            if "sampl" in text.lower() or "5 " in text.lower() or "5-min" in text.lower() or "align" in text.lower():
-                print(f"--- Page {page_num+1} (PyPDF2) ---")
-                lines = text.split('\n')
-                for i, line in enumerate(lines):
-                    if "sampl" in line.lower() or "resampl" in line.lower() or "align" in line.lower():
-                        start = max(0, i-3)
-                        end = min(len(lines), i+4)
-                        print('\n'.join(lines[start:end]))
-                        print("="*40)
-except Exception as e2:
-    print(f"PyPDF2 failed: {e2}")
+    import fitz # PyMuPDF
+    doc = fitz.open(pdf_path)
+    print(f"Total pages: {len(doc)}")
+    # 처음 4페이지의 텍스트를 추출하여 출력합니다.
+    for i in range(min(4, len(doc))):
+        print(f"\n================ PAGE {i+1} ================")
+        print(doc[i].get_text())
+except Exception as e:
+    print(f"Extraction failed: {e}")
